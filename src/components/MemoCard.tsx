@@ -97,7 +97,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
 
   const MemoContent = () => (
     <div
-      className={`memo-card absolute p-4 rounded-lg shadow-lg border-2 border-gray-200`}
+      className={`memo-card absolute p-4 rounded-lg shadow-lg border-2 border-gray-200 flex flex-col`}
       style={{ backgroundColor: memo.color, ...cardStyle }}
     >
       {/* Drag Handle - 只在可拖拽時顯示 */}
@@ -164,7 +164,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
       )}
 
       {/* Content */}
-      <div className={`${isLargeSize ? 'mt-12' : 'mt-8'} ${memo.image ? '' : ''}`}>
+      <div className={`${isLargeSize ? 'mt-12' : 'mt-8'} ${memo.image ? '' : ''} flex-1 overflow-hidden`}>
         {isEditing ? (
           <textarea
             ref={textareaRef}
@@ -172,16 +172,27 @@ const MemoCard: React.FC<MemoCardProps> = ({
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleContentSubmit}
             onKeyDown={handleKeyPress}
-            className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag ${
+            className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag break-words ${
               responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
             }`}
             placeholder="輸入您的貼文內容..."
             rows={responsiveConfig ? Math.floor(responsiveConfig.memoHeight / 40) : (isLargeSize ? 6 : 4)}
+            style={{ 
+              wordWrap: 'break-word', 
+              overflowWrap: 'break-word',
+              maxHeight: responsiveConfig ? `${responsiveConfig.memoHeight * 0.4}px` : '120px'
+            }}
           />
         ) : (
-          <p className={`text-gray-800 whitespace-pre-wrap ${
+          <p className={`text-gray-800 whitespace-pre-wrap break-words overflow-hidden ${
             responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
-          }`}>
+          }`} style={{ 
+            wordWrap: 'break-word', 
+            overflowWrap: 'break-word', 
+            hyphens: 'auto',
+            maxHeight: responsiveConfig ? `${responsiveConfig.memoHeight * 0.4}px` : '120px',
+            overflowY: 'auto'
+          }}>
             {memo.content || '點擊編輯...'}
           </p>
         )}

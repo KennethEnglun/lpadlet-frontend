@@ -244,7 +244,7 @@ const App: React.FC = () => {
     const col = index % memosPerRow;
     
     const x = col * (memoWidth + padding) + padding;
-    const y = row * (memoHeight + padding) + padding + headerHeight;
+    const y = row * (memoHeight + padding * 2) + padding;
     
     return { x, y };
   }, [responsiveConfig]);
