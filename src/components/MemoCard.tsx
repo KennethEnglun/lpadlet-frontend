@@ -11,6 +11,8 @@ interface MemoCardProps {
   isOwner: boolean;
   isAdmin?: boolean;
   onAdminDelete?: (id: string) => void;
+  isDraggable?: boolean;
+  isLargeSize?: boolean;
 }
 
 const MemoCard: React.FC<MemoCardProps> = ({
@@ -21,6 +23,8 @@ const MemoCard: React.FC<MemoCardProps> = ({
   isOwner,
   isAdmin = false,
   onAdminDelete,
+  isDraggable = true,
+  isLargeSize = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(memo.content);
@@ -34,8 +38,10 @@ const MemoCard: React.FC<MemoCardProps> = ({
   }, [isEditing, content]);
 
   const handleDragStop = (e: any, data: any) => {
-    console.log('Drag stopped:', memo.id, data.x, data.y);
-    onUpdatePosition(memo.id, data.x, data.y);
+    if (isDraggable) {
+      console.log('Drag stopped:', memo.id, data.x, data.y);
+      onUpdatePosition(memo.id, data.x, data.y);
+    }
   };
 
   const handleContentSubmit = () => {
@@ -57,101 +63,131 @@ const MemoCard: React.FC<MemoCardProps> = ({
   };
 
   const handleAdminDelete = () => {
-    if (onAdminDelete && window.confirm('確定要刪除這個備忘錄嗎？（管理員操作）')) {
+    if (onAdminDelete && window.confirm('確定要刪除這個貼文嗎？（管理員操作）')) {
       onAdminDelete(memo.id);
     }
   };
 
-  return (
-    <Draggable
-      position={{ x: memo.x, y: memo.y }}
-      onStop={handleDragStop}
-      onDrag={(e, data) => {
-        // 拖拽過程中的即時位置更新，減少遲緩感
-      }}
-      cancel=".no-drag"
-      enableUserSelectHack={false}
+  const cardWidth = isLargeSize ? 'w-128' : 'w-64'; // 512px vs 256px
+  const cardHeight = isLargeSize ? 'min-h-64' : 'min-h-32'; // 256px vs 128px
+
+  const MemoContent = () => (
+    <div
+      className={`memo-card absolute ${cardWidth} ${cardHeight} p-4 rounded-lg shadow-lg border-2 border-gray-200`}
+      style={{ backgroundColor: memo.color }}
     >
-      <div
-        className="memo-card absolute w-64 min-h-32 p-4"
-        style={{ backgroundColor: memo.color }}
-      >
-        {/* Drag Handle */}
-        <div className="drag-handle absolute top-0 left-0 w-full h-8 cursor-move bg-transparent hover:bg-black/5 transition-colors" />
-        
-        {/* Drag Indicator */}
-        <div className="drag-handle absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gray-300 rounded-full cursor-move" />
-        
-        {/* Action Buttons */}
-        <div className="absolute top-2 right-2 flex space-x-1 z-10 no-drag">
-          {/* Owner Controls */}
-          {isOwner && (
-            <>
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="p-1 text-gray-500 hover:text-blue-600 transition-colors bg-white/70 rounded hover:bg-white/90"
-              >
-                <Edit3 size={14} />
-              </button>
-              <button
-                onClick={() => onDelete(memo.id)}
-                className="p-1 text-gray-500 hover:text-red-600 transition-colors bg-white/70 rounded hover:bg-white/90"
-              >
-                <Trash2 size={14} />
-              </button>
-            </>
-          )}
-          
-          {/* Admin Controls */}
-          {isAdmin && !isOwner && (
-            <button
-              onClick={handleAdminDelete}
-              className="p-1 text-red-500 hover:text-red-700 transition-colors bg-red-100/70 rounded hover:bg-red-100/90"
-              title="管理員刪除"
-            >
-              <Shield size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Image */}
-        {memo.image && (
-          <div className="mb-3">
-            <img
-              src={memo.image}
-              alt="Memo attachment"
-              className="w-full h-32 object-cover rounded-md"
-            />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="mt-8">
-          {isEditing ? (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onBlur={handleContentSubmit}
-              onKeyDown={handleKeyPress}
-              className="w-full bg-transparent border-none resize-none outline-none text-gray-800 text-sm no-drag"
-              placeholder="輸入您的備忘錄..."
-              rows={4}
-            />
-          ) : (
-            <p className="text-gray-800 text-sm whitespace-pre-wrap">
-              {memo.content || '點擊編輯...'}
-            </p>
-          )}
-        </div>
-
-        {/* Timestamp */}
-        <div className="mt-3 text-xs text-gray-500">
-          {new Date(memo.createdAt).toLocaleString('zh-TW')}
-        </div>
+      {/* Drag Handle - 只在可拖拽時顯示 */}
+      {isDraggable && (
+        <>
+          <div className="drag-handle absolute top-0 left-0 w-full h-8 cursor-move bg-transparent hover:bg-black/5 transition-colors" />
+          <div className="drag-handle absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gray-300 rounded-full cursor-move" />
+        </>
+      )}
+      
+      {/* 用戶名稱 */}
+      <div className="absolute top-2 left-2 text-xs text-gray-600 bg-white/70 px-2 py-1 rounded">
+        {memo.userName || `用戶${memo.createdBy.slice(-4)}`}
       </div>
-    </Draggable>
+      
+      {/* Action Buttons */}
+      <div className="absolute top-2 right-2 flex space-x-1 z-10 no-drag">
+        {/* Owner Controls */}
+        {isOwner && (
+          <>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="p-1 text-gray-500 hover:text-blue-600 transition-colors bg-white/70 rounded hover:bg-white/90"
+            >
+              <Edit3 size={14} />
+            </button>
+            <button
+              onClick={() => onDelete(memo.id)}
+              className="p-1 text-gray-500 hover:text-red-600 transition-colors bg-white/70 rounded hover:bg-white/90"
+            >
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
+        
+        {/* Admin Controls */}
+        {isAdmin && !isOwner && (
+          <button
+            onClick={handleAdminDelete}
+            className="p-1 text-red-500 hover:text-red-700 transition-colors bg-red-100/70 rounded hover:bg-red-100/90"
+            title="管理員刪除"
+          >
+            <Shield size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Image */}
+      {memo.image && (
+        <div className={`mb-3 ${isLargeSize ? 'mt-12' : 'mt-8'}`}>
+          <img
+            src={memo.image}
+            alt="Memo attachment"
+            className={`w-full object-cover rounded-md ${isLargeSize ? 'h-48' : 'h-32'}`}
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className={`${isLargeSize ? 'mt-12' : 'mt-8'} ${memo.image ? '' : ''}`}>
+        {isEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onBlur={handleContentSubmit}
+            onKeyDown={handleKeyPress}
+            className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag ${
+              isLargeSize ? 'text-base' : 'text-sm'
+            }`}
+            placeholder="輸入您的貼文內容..."
+            rows={isLargeSize ? 6 : 4}
+          />
+        ) : (
+          <p className={`text-gray-800 whitespace-pre-wrap ${isLargeSize ? 'text-base' : 'text-sm'}`}>
+            {memo.content || '點擊編輯...'}
+          </p>
+        )}
+      </div>
+
+      {/* Timestamp */}
+      <div className={`mt-3 text-gray-500 ${isLargeSize ? 'text-sm' : 'text-xs'}`}>
+        {new Date(memo.createdAt).toLocaleString('zh-TW')}
+      </div>
+    </div>
   );
+
+  if (isDraggable) {
+    return (
+      <Draggable
+        position={{ x: memo.x, y: memo.y }}
+        onStop={handleDragStop}
+        onDrag={(e, data) => {
+          // 拖拽過程中的即時位置更新，減少遲緩感
+        }}
+        cancel=".no-drag"
+        enableUserSelectHack={false}
+      >
+        <MemoContent />
+      </Draggable>
+    );
+  } else {
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: memo.x,
+          top: memo.y,
+        }}
+      >
+        <MemoContent />
+      </div>
+    );
+  }
 };
 
 export default MemoCard; 

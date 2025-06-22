@@ -8,6 +8,7 @@ export interface Memo {
   createdAt: Date;
   createdBy: string;
   boardId: string;
+  userName?: string;
 }
 
 export interface UserCursor {
@@ -23,6 +24,7 @@ export interface CreateMemoData {
   y?: number;
   color?: string;
   boardId: string;
+  userName?: string;
 }
 
 export interface UpdateMemoPositionData {

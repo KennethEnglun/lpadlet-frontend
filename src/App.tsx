@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Users, MousePointer, Settings, Layout } from 'lucide-react';
+import { Plus, Users, Settings, Layout } from 'lucide-react';
 import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
 import AdminPanel from './components/AdminPanel';
@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isBoardSelectorOpen, setIsBoardSelectorOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   
   // 記事版和用戶狀態
   const [boards, setBoards] = useState<Board[]>([]);
@@ -51,15 +52,11 @@ const App: React.FC = () => {
   }, []);
 
   const handleUserCursor = useCallback((cursor: UserCursor) => {
-    setUserCursors(prev => new Map(prev).set(cursor.userId, cursor));
+    // 移除滑鼠光標功能 - 不再處理
   }, []);
 
   const handleUserDisconnected = useCallback((userId: string) => {
-    setUserCursors(prev => {
-      const newCursors = new Map(prev);
-      newCursors.delete(userId);
-      return newCursors;
-    });
+    // 移除滑鼠光標功能 - 不再處理
   }, []);
 
   const handleUserCountChanged = useCallback((count: number) => {
@@ -70,7 +67,7 @@ const App: React.FC = () => {
   const handleBoardsReceived = useCallback((receivedBoards: Board[]) => {
     setBoards(receivedBoards);
     if (receivedBoards.length > 0 && !currentBoard) {
-      setCurrentBoard(receivedBoards[0]);
+      // 不自動選擇記事版，讓用戶手動選擇
     }
   }, [currentBoard]);
 
@@ -134,42 +131,53 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 處理鼠標移動
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (socket) {
-      sendCursorMove(e.clientX, e.clientY);
-    }
-  }, [socket, sendCursorMove]);
+  // 計算memo的自動排列位置
+  const calculateMemoPosition = useCallback((index: number) => {
+    const memoWidth = 512; // 放大一倍：原本256 -> 512
+    const memoHeight = 256; // 放大一倍：原本128 -> 256
+    const padding = 20;
+    const memosPerRow = 5;
+    
+    const row = Math.floor(index / memosPerRow);
+    const col = index % memosPerRow;
+    
+    const x = col * (memoWidth + padding) + padding;
+    const y = row * (memoHeight + padding) + padding + 100; // +100 for header
+    
+    return { x, y };
+  }, []);
 
-  // 處理memo位置更新
+  // 處理memo位置更新（禁用拖拽）
   const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
-    // 立即更新本地狀態
-    setMemos(prev => prev.map(memo => 
-      memo.id === id ? { ...memo, x, y } : memo
-    ));
-    // 發送到服務器
-    updateMemoPosition(id, x, y);
-  }, [updateMemoPosition]);
+    // 不允許用戶手動移動memo位置
+    return;
+  }, []);
 
   // 處理新memo創建
-  const handleCreateMemo = useCallback((content: string, image?: string, color?: string) => {
+  const handleCreateMemo = useCallback((content: string, image?: string, color?: string, userName?: string) => {
     if (!currentBoard) return;
+    
+    // 計算當前記事版memo的數量來決定位置
+    const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
+    const position = calculateMemoPosition(currentBoardMemos.length);
     
     createMemo({
       content,
       image,
       color,
-      x: Math.random() * (window.innerWidth - 300),
-      y: Math.random() * (window.innerHeight - 200) + 100,
+      x: position.x,
+      y: position.y,
       boardId: currentBoard.id,
+      userName: userName || `用戶${currentSocketId.slice(-4)}`,
     });
-  }, [createMemo, currentBoard]);
+  }, [createMemo, currentBoard, memos, currentSocketId, calculateMemoPosition]);
 
   // 處理記事版切換
   const handleBoardSwitch = useCallback((board: Board) => {
     setCurrentBoard(board);
     switchBoard(board.id);
     setIsBoardSelectorOpen(false);
+    setShowWelcome(false);
   }, [switchBoard]);
 
   // 處理記事版創建
@@ -209,18 +217,72 @@ const App: React.FC = () => {
     return themes[currentBoard.theme as keyof typeof themes] || themes.purple;
   };
 
+  // 重新排列memo位置
+  useEffect(() => {
+    if (currentBoard) {
+      const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
+      const needsRepositioning = currentBoardMemos.some((memo, index) => {
+        const expectedPos = calculateMemoPosition(index);
+        return memo.x !== expectedPos.x || memo.y !== expectedPos.y;
+      });
+
+      if (needsRepositioning) {
+        setMemos(prev => prev.map(memo => {
+          if (memo.boardId === currentBoard.id) {
+            const index = prev.filter(m => m.boardId === currentBoard.id).indexOf(memo);
+            const newPos = calculateMemoPosition(index);
+            return { ...memo, x: newPos.x, y: newPos.y };
+          }
+          return memo;
+        }));
+      }
+    }
+  }, [memos.length, currentBoard, calculateMemoPosition]);
+
   return (
     <div 
       className={`relative w-full h-screen overflow-hidden bg-gradient-to-br ${getBoardTheme()}`}
-      onMouseMove={handleMouseMove}
     >
+      {/* 歡迎彈窗 */}
+      {showWelcome && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏫</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                歡迎來到 LPMS LPedia
+              </h2>
+              <h3 className="text-lg font-medium text-purple-600 mb-4">
+                貼文互動空間
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                九龍婦女福利會李炳紀念學校 KWWCLPMS
+              </p>
+              <p className="text-gray-600 mb-6">
+                請選擇一個記事版開始您的互動之旅！
+              </p>
+              <button
+                onClick={() => setIsBoardSelectorOpen(true)}
+                className="w-full bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Layout size={20} />
+                <span>選擇記事版</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 頂部工具欄 */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-sm border-b border-purple-200 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              LPadlet
-            </h1>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                LPMS LPedia - 貼文互動空間
+              </h1>
+              <p className="text-xs text-gray-500">九龍婦女福利會李炳紀念學校 KWWCLPMS</p>
+            </div>
             
             {/* 記事版信息 */}
             {currentBoard && (
@@ -269,22 +331,22 @@ const App: React.FC = () => {
               <span>記事版</span>
             </button>
             
-            {/* 新增備忘錄按鈕 */}
+            {/* 新增貼文按鈕 */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="add-memo-btn flex items-center space-x-2"
               disabled={!currentBoard}
             >
               <Plus size={20} />
-              <span>新增備忘錄</span>
+              <span>新增貼文</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* 主要內容區域 */}
-      <div className="pt-20 w-full h-full relative">
-        {/* 渲染所有memo */}
+      <div className="pt-32 w-full h-full relative overflow-auto">
+        {/* 渲染所有memo - 移除拖拽功能，使用固定排列 */}
         {memos
           .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
           .map((memo) => (
@@ -297,29 +359,9 @@ const App: React.FC = () => {
             isOwner={memo.createdBy === currentSocketId}
             isAdmin={isAdmin}
             onAdminDelete={handleAdminDeleteMemo}
+            isDraggable={false}
+            isLargeSize={true}
           />
-        ))}
-
-        {/* 渲染其他用戶的光標 */}
-        {Array.from(userCursors.values()).map((cursor) => (
-          <div
-            key={cursor.userId}
-            className="absolute pointer-events-none z-50"
-            style={{
-              left: cursor.x,
-              top: cursor.y,
-              transform: 'translate(-2px, -2px)',
-            }}
-          >
-            <MousePointer 
-              size={20} 
-              className="text-purple-500 drop-shadow-md" 
-              fill="currentColor"
-            />
-            <div className="absolute top-5 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded shadow-md">
-              用戶 {cursor.userId.slice(-4)}
-            </div>
-          </div>
         ))}
 
         {/* 空狀態 */}
@@ -331,7 +373,7 @@ const App: React.FC = () => {
                 歡迎來到 {currentBoard.name}！
               </h2>
               <p className="text-gray-500 mb-6">
-                點擊上方按鈕創建您的第一個備忘錄
+                點擊上方按鈕創建您的第一個貼文
               </p>
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -345,7 +387,7 @@ const App: React.FC = () => {
         )}
 
         {/* 無記事版狀態 */}
-        {!currentBoard && (
+        {!currentBoard && !showWelcome && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📋</div>
@@ -367,7 +409,7 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* 新增備忘錄模態框 */}
+      {/* 新增貼文模態框 */}
       <AddMemoModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -403,7 +445,7 @@ const App: React.FC = () => {
 
       {/* 說明文字 */}
       <div className="absolute bottom-4 left-4 text-sm text-gray-500">
-        <p>💡 拖動備忘錄來移動位置</p>
+        <p>📝 貼文會自動排列，每行5張</p>
         <p>✏️ 點擊編輯按鈕修改內容</p>
         <p>🌐 所有變更都會即時同步給其他用戶</p>
         {isAdmin && <p>👑 管理員模式：可以刪除任何貼文和管理記事版</p>}

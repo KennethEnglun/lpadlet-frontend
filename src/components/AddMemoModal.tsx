@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Palette } from 'lucide-react';
+import { X, Upload, Palette, User } from 'lucide-react';
 
 interface AddMemoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (content: string, image?: string, color?: string) => void;
+  onSubmit: (content: string, image?: string, color?: string, userName?: string) => void;
 }
 
 const COLORS = [
@@ -24,6 +24,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
   onSubmit,
 }) => {
   const [content, setContent] = useState('');
+  const [userName, setUserName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [image, setImage] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
@@ -32,13 +33,14 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (content.trim()) {
-      onSubmit(content, image || undefined, selectedColor);
+      onSubmit(content, image || undefined, selectedColor, userName.trim() || undefined);
       handleClose();
     }
   };
 
   const handleClose = () => {
     setContent('');
+    setUserName('');
     setImage('');
     setSelectedColor(COLORS[0]);
     onClose();
@@ -79,7 +81,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">新增備忘錄</h2>
+          <h2 className="text-xl font-semibold text-gray-800">新增貼文</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700"
@@ -89,15 +91,33 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 用戶名稱輸入 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <User size={16} className="inline mr-1" />
+              您的名稱 (選填)
+            </label>
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="輸入您的名稱..."
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              如果不填寫，將顯示為匿名用戶
+            </p>
+          </div>
+
           {/* 內容輸入 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              內容
+              貼文內容
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="輸入您的備忘錄內容..."
+              placeholder="輸入您的貼文內容..."
               className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
               required
             />
@@ -141,7 +161,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Palette size={16} className="inline mr-1" />
-              顏色
+              背景顏色
             </label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map((color) => (
@@ -172,7 +192,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
               disabled={!content.trim() || isUploading}
               className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              創建
+              發布貼文
             </button>
           </div>
         </form>
