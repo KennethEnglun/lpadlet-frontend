@@ -140,10 +140,12 @@ const App: React.FC = () => {
 
   // Socket事件處理器
   const handleMemosReceived = useCallback((receivedMemos: Memo[]) => {
+    console.log('Memos received:', receivedMemos.length, receivedMemos);
     setMemos(receivedMemos);
   }, []);
 
   const handleNewMemo = useCallback((memo: Memo) => {
+    console.log('New memo received:', memo);
     setMemos(prev => [...prev, memo]);
   }, []);
 
@@ -250,7 +252,7 @@ const App: React.FC = () => {
 
   // 處理memo位置更新（禁用拖拽）
   const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
-    // 不允許用戶手動移動memo位置
+    console.log('Position update blocked for memo:', id);
     return;
   }, []);
 
@@ -261,6 +263,8 @@ const App: React.FC = () => {
     // 計算當前記事版memo的數量來決定位置
     const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
     const position = calculateMemoPosition(currentBoardMemos.length);
+    
+    console.log('Creating memo:', { content, boardId: currentBoard.id, position, currentBoardMemos: currentBoardMemos.length });
     
     createMemo({
       content,
@@ -328,6 +332,13 @@ const App: React.FC = () => {
   useEffect(() => {
     if (currentBoard) {
       const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
+      console.log('Memo display check:', {
+        totalMemos: memos.length,
+        currentBoardId: currentBoard.id,
+        currentBoardMemos: currentBoardMemos.length,
+        memosData: currentBoardMemos
+      });
+      
       const needsRepositioning = currentBoardMemos.some((memo, index) => {
         const expectedPos = calculateMemoPosition(index);
         return memo.x !== expectedPos.x || memo.y !== expectedPos.y;
@@ -479,6 +490,8 @@ const App: React.FC = () => {
         maxScale={2}
         wheel={{ step: 0.1 }}
         panning={{ velocityDisabled: true }}
+        wrapperStyle={{ width: '100%', height: '100%' }}
+        contentStyle={{ width: '100%', minHeight: '100%' }}
       >
         {({ zoomIn, zoomOut, resetTransform }: any) => (
           <>
@@ -489,7 +502,7 @@ const App: React.FC = () => {
               <button onClick={resetTransform} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-xs shadow">重置</button>
             </div>
             <TransformComponent>
-              <div className={`pt-32 w-full min-h-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32 }}>
+              <div className={`w-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32, minHeight: 'calc(100vh - 32px)' }}>
                 {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
                 {memos
                   .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
