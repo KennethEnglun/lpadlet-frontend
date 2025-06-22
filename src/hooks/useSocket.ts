@@ -19,6 +19,8 @@ interface UseSocketProps {
   onCommentsReceived?: (memoId: string, comments: Comment[]) => void;
   onNewLike?: (like: Like) => void;
   onNewComment?: (comment: Comment) => void;
+  onAllLikesReceived?: (likes: Like[]) => void;
+  onAllCommentsReceived?: (comments: Comment[]) => void;
 }
 
 interface CreateBoardData {
@@ -44,6 +46,8 @@ export const useSocket = ({
   onCommentsReceived,
   onNewLike,
   onNewComment,
+  onAllLikesReceived,
+  onAllCommentsReceived,
 }: UseSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
 
@@ -167,6 +171,21 @@ export const useSocket = ({
           onNewComment(comment);
         });
       }
+      
+      // 新增：處理所有點讚和留言數據
+      if (onAllLikesReceived) {
+        socket.on('all-likes', (likes) => {
+          console.log('❤️ 收到所有點讚數據:', likes.length);
+          onAllLikesReceived(likes);
+        });
+      }
+      
+      if (onAllCommentsReceived) {
+        socket.on('all-comments', (comments) => {
+          console.log('💬 收到所有留言數據:', comments.length);
+          onAllCommentsReceived(comments);
+        });
+      }
 
       // 錯誤處理
       socket.on('error', (error) => {
@@ -206,6 +225,8 @@ export const useSocket = ({
     onCommentsReceived,
     onNewLike,
     onNewComment,
+    onAllLikesReceived,
+    onAllCommentsReceived,
   ]);
 
   // Socket 操作方法
