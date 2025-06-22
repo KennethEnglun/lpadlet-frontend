@@ -6,6 +6,7 @@ import AdminPanel from './components/AdminPanel';
 import BoardSelector from './components/BoardSelector';
 import { useSocket } from './hooks/useSocket';
 import { Memo, UserCursor, Board, User } from './types';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 // 設備檢測函數
 const getDeviceType = () => {
@@ -454,71 +455,90 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* 主要內容區域 */}
-      <div className={`pt-32 w-full h-full relative overflow-auto`} style={{ paddingTop: responsiveConfig.headerHeight + 32 }}>
-        {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
-        {memos
-          .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
-          .map((memo) => (
-          <MemoCard
-            key={memo.id}
-            memo={memo}
-            onDelete={deleteMemo}
-            onUpdatePosition={handleUpdateMemoPosition}
-            onUpdateContent={updateMemoContent}
-            isOwner={memo.createdBy === currentSocketId}
-            isAdmin={isAdmin}
-            onAdminDelete={handleAdminDeleteMemo}
-            isDraggable={false}
-            isLargeSize={deviceType === 'Desktop'}
-            responsiveConfig={responsiveConfig}
-          />
-        ))}
-
-        {/* 空狀態 */}
-        {currentBoard && memos.filter(memo => memo.boardId === currentBoard.id).length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">📝</div>
-              <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
-                歡迎來到 {currentBoard.name}！
-              </h2>
-              <p className="text-gray-500 mb-6">
-                點擊上方按鈕創建您的第一個貼文
-              </p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="add-memo-btn"
-              >
-                <Plus size={20} />
-                <span>開始創建</span>
-              </button>
+      {/* 主要內容區域，加上縮放及拖移功能 */}
+      <TransformWrapper
+        minScale={0.5}
+        maxScale={2}
+        wheel={{ step: 0.1 }}
+        panning={{ velocityDisabled: true }}
+      >
+        {({ zoomIn, zoomOut, resetTransform }: any) => (
+          <>
+            {/* 縮放控制按鈕 */}
+            <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
+              <button onClick={zoomIn} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-lg shadow">+</button>
+              <button onClick={zoomOut} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-lg shadow">-</button>
+              <button onClick={resetTransform} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-xs shadow">重置</button>
             </div>
-          </div>
-        )}
+            <TransformComponent>
+              <div className={`pt-32 w-full h-full relative`} style={{ paddingTop: responsiveConfig.headerHeight + 32 }}>
+                {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
+                {memos
+                  .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
+                  .map((memo) => (
+                  <MemoCard
+                    key={memo.id}
+                    memo={memo}
+                    onDelete={deleteMemo}
+                    onUpdatePosition={handleUpdateMemoPosition}
+                    onUpdateContent={updateMemoContent}
+                    isOwner={memo.createdBy === currentSocketId}
+                    isAdmin={isAdmin}
+                    onAdminDelete={handleAdminDeleteMemo}
+                    isDraggable={false}
+                    isLargeSize={deviceType === 'Desktop'}
+                    responsiveConfig={responsiveConfig}
+                  />
+                ))}
 
-        {/* 無記事版狀態 */}
-        {!currentBoard && !showWelcome && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">📋</div>
-              <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
-                請選擇一個記事版
-              </h2>
-              <p className="text-gray-500 mb-6">
-                點擊上方記事版按鈕來選擇或創建記事版
-              </p>
-              <button
-                onClick={() => setIsBoardSelectorOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-              >
-                <Layout size={20} />
-                <span>選擇記事版</span>
-              </button>
-            </div>
-          </div>
+                {/* 空狀態 */}
+                {currentBoard && memos.filter(memo => memo.boardId === currentBoard.id).length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📝</div>
+                      <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
+                        歡迎來到 {currentBoard.name}！
+                      </h2>
+                      <p className="text-gray-500 mb-6">
+                        點擊上方按鈕創建您的第一個貼文
+                      </p>
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="add-memo-btn"
+                      >
+                        <Plus size={20} />
+                        <span>開始創建</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 無記事版狀態 */}
+                {!currentBoard && !showWelcome && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📋</div>
+                      <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
+                        請選擇一個記事版
+                      </h2>
+                      <p className="text-gray-500 mb-6">
+                        點擊上方記事版按鈕來選擇或創建記事版
+                      </p>
+                      <button
+                        onClick={() => setIsBoardSelectorOpen(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                      >
+                        <Layout size={20} />
+                        <span>選擇記事版</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TransformComponent>
+          </>
         )}
-      </div>
+      </TransformWrapper>
 
       {/* 新增貼文模態框 */}
       <AddMemoModal

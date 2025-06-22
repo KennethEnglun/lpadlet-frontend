@@ -27,7 +27,7 @@
   }
   
   .memo-card:hover {
-    @apply shadow-xl transform scale-105;
+    @apply shadow-xl;
   }
   
   .add-memo-btn {

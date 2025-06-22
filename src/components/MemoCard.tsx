@@ -151,11 +151,14 @@ const MemoCard: React.FC<MemoCardProps> = ({
           <img
             src={memo.image}
             alt="Memo attachment"
-            className={`w-full object-cover rounded-md ${
-              responsiveConfig 
-                ? `h-${Math.floor(responsiveConfig.memoHeight * 0.4)}` 
-                : (isLargeSize ? 'h-48' : 'h-32')
-            }`}
+            className="w-full object-cover rounded-md"
+            style={{
+              height: responsiveConfig
+                ? responsiveConfig.memoHeight * 0.4
+                : isLargeSize
+                  ? 192 // 相當於 h-48
+                  : 128 // 相當於 h-32
+            }}
           />
         </div>
       )}
