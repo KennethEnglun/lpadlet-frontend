@@ -44,14 +44,25 @@ const getDeviceType = () => {
 
 // 根據設備類型獲取響應式配置
 const getResponsiveConfig = (deviceType: string) => {
+  // 動態計算每行memo數量基於視窗寬度
+  const calculateMemosPerRow = () => {
+    const windowWidth = window.innerWidth;
+    const memoWidth = deviceType === 'Desktop' ? 320 : deviceType.includes('Tablet') ? 280 : 260;
+    const padding = 20;
+    const availableWidth = windowWidth - (padding * 4); // 留出邊距
+    return Math.max(1, Math.floor(availableWidth / (memoWidth + padding)));
+  };
+
+  const memosPerRow = calculateMemosPerRow();
+  
   switch (deviceType) {
     case 'iPhone':
     case 'Android Phone':
     case 'Mobile':
       return {
-        memosPerRow: 2,
-        memoWidth: 280,
-        memoHeight: 200,
+        memosPerRow: memosPerRow,
+        memoWidth: 260,
+        memoHeight: 180,
         padding: 10,
         headerHeight: 120,
         fontSize: 'text-sm',
@@ -62,9 +73,9 @@ const getResponsiveConfig = (deviceType: string) => {
     case 'Android Tablet':
     case 'Tablet':
       return {
-        memosPerRow: 3,
-        memoWidth: 320,
-        memoHeight: 220,
+        memosPerRow: memosPerRow,
+        memoWidth: 280,
+        memoHeight: 200,
         padding: 15,
         headerHeight: 100,
         fontSize: 'text-base',
@@ -73,9 +84,9 @@ const getResponsiveConfig = (deviceType: string) => {
       };
     default: // Desktop
       return {
-        memosPerRow: 5,
-        memoWidth: 512,
-        memoHeight: 256,
+        memosPerRow: memosPerRow,
+        memoWidth: 320,
+        memoHeight: 240,
         padding: 20,
         headerHeight: 100,
         fontSize: 'text-base',
@@ -129,9 +140,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleResize = () => {
       const newDeviceType = getDeviceType();
+      const newResponsiveConfig = getResponsiveConfig(newDeviceType);
       if (newDeviceType !== deviceType) {
         setDeviceType(newDeviceType);
-        setResponsiveConfig(getResponsiveConfig(newDeviceType));
+        setResponsiveConfig(newResponsiveConfig);
+      } else {
+        // 即使設備類型相同，也要更新配置以反映視窗大小變化
+        setResponsiveConfig(newResponsiveConfig);
       }
     };
 
@@ -245,12 +260,12 @@ const App: React.FC = () => {
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
-    // 使用更大的間距確保完全不重疊
-    const horizontalSpacing = memoWidth + (padding * 4); // 增加水平間距
-    const verticalSpacing = memoHeight + (padding * 6); // 增加垂直間距
+    // 使用合理的間距，不要太大避免浪費空間
+    const horizontalSpacing = memoWidth + padding;
+    const verticalSpacing = memoHeight + (padding * 2);
     
-    const x = col * horizontalSpacing + (padding * 2);
-    const y = row * verticalSpacing + (padding * 2);
+    const x = col * horizontalSpacing + padding;
+    const y = row * verticalSpacing + padding;
     
     return { x, y };
   }, [responsiveConfig]);
@@ -357,41 +372,13 @@ const App: React.FC = () => {
     return themes[currentBoard.theme as keyof typeof themes] || themes.purple;
   };
 
-  // 重新排列memo位置
+  // 只在記事版切換時自動重置一次
   useEffect(() => {
-    if (currentBoard && !isResetting) {
-      const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
-      console.log('Memo display check:', {
-        totalMemos: memos.length,
-        currentBoardId: currentBoard.id,
-        currentBoardMemos: currentBoardMemos.length,
-        memosData: currentBoardMemos
-      });
-      
-      // 只在memo數量變化時重新排列，避免衝突
-      const timeoutId = setTimeout(() => {
-        if (!isResetting) {
-          handleResetPositions();
-        }
-      }, 300);
-      
-      return () => clearTimeout(timeoutId);
+    if (currentBoard && memos.length > 0) {
+      console.log('Board switched, repositioning memos once');
+      handleResetPositions();
     }
-  }, [memos.length, currentBoard, isResetting, handleResetPositions]);
-
-  // 設備變化時重新排列memo
-  useEffect(() => {
-    if (currentBoard && memos.length > 0 && !isResetting) {
-      console.log('Device changed, repositioning memos for:', deviceType);
-      const timeoutId = setTimeout(() => {
-        if (!isResetting) {
-          handleResetPositions();
-        }
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [deviceType, responsiveConfig, currentBoard, isResetting, handleResetPositions]);
+  }, [currentBoard]); // 只依賴 currentBoard，移除其他依賴避免重複觸發
 
   const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
 
