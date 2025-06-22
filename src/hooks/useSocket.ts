@@ -56,36 +56,101 @@ export const useSocket = ({
       const isAdmin = adminParam === 'admin123';
       
       const socketUrl = isAdmin ? `${config.SOCKET_URL}?admin=admin123` : config.SOCKET_URL;
+      console.log('🔌 正在連接到Socket服務器:', socketUrl);
       socketRef.current = io(socketUrl);
       
       const socket = socketRef.current;
 
+      // 連接事件
+      socket.on('connect', () => {
+        console.log('✅ Socket已連接，ID:', socket.id);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Socket已斷開連接');
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('🔥 Socket連接錯誤:', error);
+      });
+
       // 設置事件監聽器
-      socket.on('all-memos', onMemosReceived);
-      socket.on('new-memo', onNewMemo);
-      socket.on('memo-deleted', onMemoDeleted);
+      socket.on('all-memos', (memos) => {
+        console.log('📝 收到所有memos:', memos.length);
+        onMemosReceived(memos);
+      });
+      
+      socket.on('new-memo', (memo) => {
+        console.log('🆕 收到新memo:', memo.id);
+        onNewMemo(memo);
+      });
+      
+      socket.on('memo-deleted', (memoId) => {
+        console.log('🗑️ memo已刪除:', memoId);
+        onMemoDeleted(memoId);
+      });
+      
       socket.on('memo-position-updated', onMemoPositionUpdated);
       socket.on('memo-content-updated', onMemoContentUpdated);
       socket.on('user-cursor', onUserCursor);
       socket.on('user-disconnected', onUserDisconnected);
-      socket.on('user-count', onUserCountChanged);
+      socket.on('user-count', (count) => {
+        console.log('👥 用戶數量:', count);
+        onUserCountChanged(count);
+      });
       
       // 新增：記事版相關事件
-      socket.on('all-boards', onBoardsReceived);
+      socket.on('all-boards', (boards) => {
+        console.log('📋 收到所有記事版:', boards.length);
+        onBoardsReceived(boards);
+      });
+      
       socket.on('board-created', onBoardCreated);
       socket.on('board-deleted', onBoardDeleted);
-      socket.on('user-info', onUserInfo);
+      socket.on('user-info', (info) => {
+        console.log('👤 用戶信息:', info);
+        onUserInfo(info);
+      });
       
       // 新增：點讚和評論事件
-      if (onLikesReceived) socket.on('memo-likes', onLikesReceived);
-      if (onCommentsReceived) socket.on('memo-comments', onCommentsReceived);
-      if (onNewLike) socket.on('new-like', onNewLike);
-      if (onNewComment) socket.on('new-comment', onNewComment);
+      if (onLikesReceived) {
+        socket.on('memo-likes', (memoId, likes) => {
+          console.log(`❤️ 收到memo ${memoId} 的點讚:`, likes.length);
+          onLikesReceived(memoId, likes);
+        });
+      }
+      
+      if (onCommentsReceived) {
+        socket.on('memo-comments', (memoId, comments) => {
+          console.log(`💬 收到memo ${memoId} 的評論:`, comments.length);
+          onCommentsReceived(memoId, comments);
+        });
+      }
+      
+      if (onNewLike) {
+        socket.on('new-like', (like) => {
+          console.log('🆕❤️ 收到新點讚:', like);
+          onNewLike(like);
+        });
+      }
+      
+      if (onNewComment) {
+        socket.on('new-comment', (comment) => {
+          console.log('🆕💬 收到新評論:', comment);
+          onNewComment(comment);
+        });
+      }
+
+      // 錯誤處理
+      socket.on('error', (error) => {
+        console.error('🔥 Socket錯誤:', error);
+      });
     });
 
     // 清理函數
     return () => {
       if (socketRef.current) {
+        console.log('🔌 正在斷開Socket連接');
         socketRef.current.disconnect();
       }
     };
