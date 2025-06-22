@@ -26,6 +26,8 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
   const [commentText, setCommentText] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isCommenting, setIsCommenting] = useState(false);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   // 檢查當前用戶是否已點讚
@@ -39,16 +41,40 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
     }
   }, [memo.image]);
 
-  const handleLike = () => {
+  const handleLike = async () => {
+    if (isLiking) return; // 防止重複點擊
+    
+    setIsLiking(true);
     console.log('點讚按鈕被點擊，memo ID:', memo.id);
-    onLike(memo.id);
+    
+    try {
+      onLike(memo.id);
+      // 給用戶視覺反饋
+      setTimeout(() => {
+        setIsLiking(false);
+      }, 1000);
+    } catch (error) {
+      console.error('點讚失敗:', error);
+      setIsLiking(false);
+    }
   };
 
-  const handleComment = () => {
-    if (commentText.trim()) {
-      console.log('發送評論，memo ID:', memo.id, '內容:', commentText.trim());
+  const handleComment = async () => {
+    if (isCommenting || !commentText.trim()) return;
+    
+    setIsCommenting(true);
+    console.log('發送評論，memo ID:', memo.id, '內容:', commentText.trim());
+    
+    try {
       onComment(memo.id, commentText.trim());
       setCommentText('');
+      // 給用戶視覺反饋
+      setTimeout(() => {
+        setIsCommenting(false);
+      }, 500);
+    } catch (error) {
+      console.error('評論失敗:', error);
+      setIsCommenting(false);
     }
   };
 
@@ -147,17 +173,20 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={handleLike}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                    disabled={isLiking}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                       isLiked 
                         ? 'bg-red-50 text-red-600 hover:bg-red-100' 
                         : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
+                    } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Heart 
                       size={18} 
-                      className={isLiked ? 'fill-current' : ''} 
+                      className={`${isLiked ? 'fill-current' : ''} ${isLiking ? 'animate-pulse' : ''}`} 
                     />
-                    <span className="font-medium">{likeCount}</span>
+                    <span className="font-medium">
+                      {isLiking ? '...' : likeCount}
+                    </span>
                   </button>
                   <button
                     onClick={() => commentInputRef.current?.focus()}
@@ -202,7 +231,7 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
               {/* Comment input */}
               <div className="p-4 border-t border-gray-100">
                 <div className="flex space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
                     <User size={14} className="text-white" />
                   </div>
                   <div className="flex-1 flex space-x-2">
@@ -210,23 +239,38 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
                       ref={commentInputRef}
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      placeholder="寫下您的評論..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      onKeyPress={handleKeyPress}
+                      placeholder="寫下你的想法..."
+                      className="flex-1 resize-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       rows={2}
+                      disabled={isCommenting}
+                      maxLength={500}
                     />
                     <button
                       onClick={handleComment}
-                      disabled={!commentText.trim()}
-                      className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-1 ${
-                        commentText.trim()
-                          ? 'bg-purple-500 text-white hover:bg-purple-600'
+                      disabled={!commentText.trim() || isCommenting}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                        commentText.trim() && !isCommenting
+                          ? 'bg-purple-600 text-white hover:bg-purple-700' 
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      <Send size={16} />
+                      {isCommenting ? (
+                        <div className="flex items-center space-x-1">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>發送中</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1">
+                          <Send size={14} />
+                          <span>發送</span>
+                        </div>
+                      )}
                     </button>
                   </div>
+                </div>
+                <div className="text-xs text-gray-400 mt-1 ml-11">
+                  {commentText.length}/500 字符
                 </div>
               </div>
             </div>

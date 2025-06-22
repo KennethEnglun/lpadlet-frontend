@@ -302,15 +302,15 @@ const App: React.FC = () => {
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
-    // 確保有足夠的間距防止重疊
-    const horizontalSpacing = memoWidth + (padding * 2); // 增加水平間距
-    const verticalSpacing = memoHeight + (padding * 3);  // 增加垂直間距
+    // 增加更多間距防止重疊
+    const horizontalSpacing = memoWidth + (padding * 3); // 增加水平間距
+    const verticalSpacing = memoHeight + (padding * 4);  // 增加垂直間距
     
     // 從header下方開始排列，確保不被遮蓋
-    const x = col * horizontalSpacing + padding;
-    const y = row * verticalSpacing + headerHeight + padding;
+    const x = col * horizontalSpacing + (padding * 2);
+    const y = row * verticalSpacing + headerHeight + (padding * 2);
     
-    console.log(`Memo ${index}: row=${row}, col=${col}, x=${x}, y=${y}, spacing=${horizontalSpacing}x${verticalSpacing}`);
+    console.log(`Memo ${index}: row=${row}, col=${col}, x=${x}, y=${y}, spacing=${horizontalSpacing}x${verticalSpacing}, containerWidth=${window.innerWidth}`);
     
     return { x, y };
   }, [responsiveConfig]);
@@ -454,22 +454,13 @@ const App: React.FC = () => {
     return themes[currentBoard.theme as keyof typeof themes] || themes.purple;
   };
 
-  // 記事版切換時自動重置一次
+  // 記事版切換時自動重置一次 - 移除自動重置，只保留手動控制
   useEffect(() => {
     if (currentBoard) {
-      console.log('Board switched, will reposition memos');
-      // 延遲一點時間確保memo已經載入
-      const timer = setTimeout(() => {
-        const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
-        if (currentBoardMemos.length > 0) {
-          console.log('Auto-repositioning memos for board:', currentBoard.name);
-          handleResetPositions();
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
+      console.log('Board switched to:', currentBoard.name);
+      // 不再自動重置，讓用戶手動控制
     }
-  }, [currentBoard, memos.length]); // 依賴記事版和memo數量變化
+  }, [currentBoard]); // 移除對memos.length的依賴
 
   const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
 
