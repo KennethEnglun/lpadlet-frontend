@@ -243,8 +243,12 @@ const App: React.FC = () => {
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
-    const x = col * (memoWidth + padding) + padding;
-    const y = row * (memoHeight + padding * 2) + padding;
+    // 確保有足夠的間距防止重疊
+    const horizontalSpacing = memoWidth + (padding * 2);
+    const verticalSpacing = memoHeight + (padding * 3);
+    
+    const x = col * horizontalSpacing + padding;
+    const y = row * verticalSpacing + padding;
     
     return { x, y };
   }, [responsiveConfig]);
@@ -338,23 +342,34 @@ const App: React.FC = () => {
         memosData: currentBoardMemos
       });
       
-      const needsRepositioning = currentBoardMemos.some((memo, index) => {
-        const expectedPos = calculateMemoPosition(index);
-        return memo.x !== expectedPos.x || memo.y !== expectedPos.y;
-      });
-
-      if (needsRepositioning) {
-        setMemos(prev => prev.map(memo => {
-          if (memo.boardId === currentBoard.id) {
-            const index = prev.filter(m => m.boardId === currentBoard.id).indexOf(memo);
-            const newPos = calculateMemoPosition(index);
-            return { ...memo, x: newPos.x, y: newPos.y };
-          }
-          return memo;
-        }));
-      }
+      // 強制重新排列所有memo以防止重疊
+      setMemos(prev => prev.map(memo => {
+        if (memo.boardId === currentBoard.id) {
+          const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
+          const index = currentBoardMemosFiltered.findIndex(m => m.id === memo.id);
+          const newPos = calculateMemoPosition(index);
+          return { ...memo, x: newPos.x, y: newPos.y };
+        }
+        return memo;
+      }));
     }
   }, [memos.length, currentBoard, calculateMemoPosition]);
+
+  // 設備變化時重新排列memo
+  useEffect(() => {
+    if (currentBoard && memos.length > 0) {
+      console.log('Device changed, repositioning memos for:', deviceType);
+      setMemos(prev => prev.map(memo => {
+        if (memo.boardId === currentBoard.id) {
+          const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
+          const index = currentBoardMemosFiltered.findIndex(m => m.id === memo.id);
+          const newPos = calculateMemoPosition(index);
+          return { ...memo, x: newPos.x, y: newPos.y };
+        }
+        return memo;
+      }));
+    }
+  }, [deviceType, responsiveConfig, currentBoard, calculateMemoPosition]);
 
   const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
 

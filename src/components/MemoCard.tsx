@@ -41,6 +41,8 @@ const MemoCard: React.FC<MemoCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(memo.content);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 使用響應式配置或默認值
@@ -57,6 +59,13 @@ const MemoCard: React.FC<MemoCardProps> = ({
       textareaRef.current.setSelectionRange(content.length, content.length);
     }
   }, [isEditing, content]);
+
+  useEffect(() => {
+    if (memo.image) {
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  }, [memo.image]);
 
   const handleDragStop = (e: any, data: any) => {
     if (isDraggable) {
@@ -87,6 +96,16 @@ const MemoCard: React.FC<MemoCardProps> = ({
     if (onAdminDelete && window.confirm('確定要刪除這個貼文嗎？（管理員操作）')) {
       onAdminDelete(memo.id);
     }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoaded(false);
+    setImageError(true);
   };
 
   // 響應式尺寸設置
@@ -148,10 +167,40 @@ const MemoCard: React.FC<MemoCardProps> = ({
       {/* Image */}
       {memo.image && (
         <div className={`mb-3 ${isLargeSize ? 'mt-12' : 'mt-8'}`}>
+          {!imageLoaded && !imageError && (
+            <div 
+              className="w-full bg-gray-200 rounded-md flex items-center justify-center"
+              style={{
+                height: responsiveConfig
+                  ? responsiveConfig.memoHeight * 0.4
+                  : isLargeSize
+                    ? 192
+                    : 128
+              }}
+            >
+              <div className="text-gray-400 text-sm">載入中...</div>
+            </div>
+          )}
+          {imageError && (
+            <div 
+              className="w-full bg-gray-100 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300"
+              style={{
+                height: responsiveConfig
+                  ? responsiveConfig.memoHeight * 0.4
+                  : isLargeSize
+                    ? 192
+                    : 128
+              }}
+            >
+              <div className="text-gray-400 text-sm">圖片載入失敗</div>
+            </div>
+          )}
           <img
             src={memo.image}
             alt="Memo attachment"
-            className="w-full object-cover rounded-md"
+            className={`w-full object-cover rounded-md transition-opacity duration-200 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             style={{
               height: responsiveConfig
                 ? responsiveConfig.memoHeight * 0.4
@@ -159,6 +208,9 @@ const MemoCard: React.FC<MemoCardProps> = ({
                   ? 192 // 相當於 h-48
                   : 128 // 相當於 h-32
             }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            loading="lazy"
           />
         </div>
       )}
