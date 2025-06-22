@@ -59,4 +59,21 @@ export interface AdminAction {
   type: 'DELETE_MEMO' | 'CREATE_BOARD' | 'DELETE_BOARD' | 'UPDATE_BOARD';
   targetId: string;
   data?: any;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  userName: string;
+  userId: string;
+  createdAt: string;
+  memoId: string;
+}
+
+export interface Like {
+  id: string;
+  userName: string;
+  userId: string;
+  createdAt: string;
+  memoId: string;
 } 

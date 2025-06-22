@@ -4,8 +4,9 @@ import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
 import AdminPanel from './components/AdminPanel';
 import BoardSelector from './components/BoardSelector';
+import MemoDetailModal from './components/MemoDetailModal';
 import { useSocket } from './hooks/useSocket';
-import { Memo, UserCursor, Board, User } from './types';
+import { Memo, UserCursor, Board, User, Comment, Like } from './types';
 
 // 設備檢測函數
 const getDeviceType = () => {
@@ -112,6 +113,12 @@ const App: React.FC = () => {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isBoardSelectorOpen, setIsBoardSelectorOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [selectedMemo, setSelectedMemo] = useState<Memo | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  // 點讚和評論狀態
+  const [memoLikes, setMemoLikes] = useState<Map<string, Like[]>>(new Map());
+  const [memoComments, setMemoComments] = useState<Map<string, Comment[]>>(new Map());
   
   // 記事版和用戶狀態
   const [boards, setBoards] = useState<Board[]>([]);
@@ -218,6 +225,33 @@ const App: React.FC = () => {
     setIsAdmin(user.isAdmin);
   }, []);
 
+  // 點讚和評論事件處理器
+  const handleLikesReceived = useCallback((memoId: string, likes: Like[]) => {
+    setMemoLikes(prev => new Map(prev).set(memoId, likes));
+  }, []);
+
+  const handleCommentsReceived = useCallback((memoId: string, comments: Comment[]) => {
+    setMemoComments(prev => new Map(prev).set(memoId, comments));
+  }, []);
+
+  const handleNewLike = useCallback((like: Like) => {
+    setMemoLikes(prev => {
+      const newMap = new Map(prev);
+      const currentLikes = newMap.get(like.memoId) || [];
+      newMap.set(like.memoId, [...currentLikes, like]);
+      return newMap;
+    });
+  }, []);
+
+  const handleNewComment = useCallback((comment: Comment) => {
+    setMemoComments(prev => {
+      const newMap = new Map(prev);
+      const currentComments = newMap.get(comment.memoId) || [];
+      newMap.set(comment.memoId, [...currentComments, comment]);
+      return newMap;
+    });
+  }, []);
+
   // 使用Socket Hook
   const { 
     createMemo, 
@@ -230,6 +264,10 @@ const App: React.FC = () => {
     adminDeleteMemo,
     adminClearAllMemos,
     switchBoard,
+    likeMemo,
+    commentMemo,
+    getMemoLikes,
+    getMemoComments,
     socket
   } = useSocket({
     onMemosReceived: handleMemosReceived,
@@ -244,6 +282,10 @@ const App: React.FC = () => {
     onBoardCreated: handleBoardCreated,
     onBoardDeleted: handleBoardDeleted,
     onUserInfo: handleUserInfo,
+    onLikesReceived: handleLikesReceived,
+    onCommentsReceived: handleCommentsReceived,
+    onNewLike: handleNewLike,
+    onNewComment: handleNewComment,
   });
 
   // 獲取當前socket ID
@@ -369,6 +411,31 @@ const App: React.FC = () => {
     setCurrentBoard(board);
     switchBoard(board.id);
   }, [switchBoard]);
+
+  // 處理memo卡片點擊
+  const handleMemoCardClick = useCallback((memo: Memo) => {
+    setSelectedMemo(memo);
+    setIsDetailModalOpen(true);
+    // 獲取該memo的點讚和評論
+    getMemoLikes(memo.id);
+    getMemoComments(memo.id);
+  }, [getMemoLikes, getMemoComments]);
+
+  // 處理點讚
+  const handleLike = useCallback((memoId: string) => {
+    likeMemo(memoId);
+  }, [likeMemo]);
+
+  // 處理評論
+  const handleComment = useCallback((memoId: string, content: string) => {
+    commentMemo(memoId, content);
+  }, [commentMemo]);
+
+  // 關閉詳細視圖
+  const handleCloseDetailModal = useCallback(() => {
+    setIsDetailModalOpen(false);
+    setSelectedMemo(null);
+  }, []);
 
   // 獲取當前記事版的背景主題
   const getBoardTheme = () => {
@@ -562,6 +629,7 @@ const App: React.FC = () => {
                     isDraggable={false}
                     isLargeSize={deviceType === 'Desktop'}
                     responsiveConfig={responsiveConfig}
+                    onCardClick={handleMemoCardClick}
                   />
                 ))}
 
@@ -646,6 +714,20 @@ const App: React.FC = () => {
           onSwitchBoard={handleAdminBoardSwitch}
           connectedUsers={connectedUsers}
           responsiveConfig={responsiveConfig}
+        />
+      )}
+
+      {/* 貼文詳細視圖模態框 */}
+      {selectedMemo && (
+        <MemoDetailModal
+          memo={selectedMemo}
+          isOpen={isDetailModalOpen}
+          onClose={handleCloseDetailModal}
+          currentUserId={currentSocketId}
+          onLike={handleLike}
+          onComment={handleComment}
+          likes={memoLikes.get(selectedMemo.id) || []}
+          comments={memoComments.get(selectedMemo.id) || []}
         />
       )}
 

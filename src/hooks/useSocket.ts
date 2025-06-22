@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Memo, UserCursor, CreateMemoData, UpdateMemoPositionData, UpdateMemoContentData, Board, User } from '../types';
+import { Memo, UserCursor, CreateMemoData, UpdateMemoPositionData, UpdateMemoContentData, Board, User, Comment, Like } from '../types';
 
 interface UseSocketProps {
   onMemosReceived: (memos: Memo[]) => void;
@@ -15,6 +15,10 @@ interface UseSocketProps {
   onBoardCreated: (board: Board) => void;
   onBoardDeleted: (boardId: string) => void;
   onUserInfo: (user: User) => void;
+  onLikesReceived?: (memoId: string, likes: Like[]) => void;
+  onCommentsReceived?: (memoId: string, comments: Comment[]) => void;
+  onNewLike?: (like: Like) => void;
+  onNewComment?: (comment: Comment) => void;
 }
 
 interface CreateBoardData {
@@ -36,6 +40,10 @@ export const useSocket = ({
   onBoardCreated,
   onBoardDeleted,
   onUserInfo,
+  onLikesReceived,
+  onCommentsReceived,
+  onNewLike,
+  onNewComment,
 }: UseSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
 
@@ -67,6 +75,12 @@ export const useSocket = ({
       socket.on('board-created', onBoardCreated);
       socket.on('board-deleted', onBoardDeleted);
       socket.on('user-info', onUserInfo);
+      
+      // 新增：點讚和評論事件
+      if (onLikesReceived) socket.on('memo-likes', onLikesReceived);
+      if (onCommentsReceived) socket.on('memo-comments', onCommentsReceived);
+      if (onNewLike) socket.on('new-like', onNewLike);
+      if (onNewComment) socket.on('new-comment', onNewComment);
     });
 
     // 清理函數
@@ -88,6 +102,10 @@ export const useSocket = ({
     onBoardCreated,
     onBoardDeleted,
     onUserInfo,
+    onLikesReceived,
+    onCommentsReceived,
+    onNewLike,
+    onNewComment,
   ]);
 
   // Socket 操作方法
@@ -133,6 +151,23 @@ export const useSocket = ({
     socketRef.current?.emit('admin-clear-all-memos', boardId);
   }, []);
 
+  // 新增：點讚和評論方法
+  const likeMemo = useCallback((memoId: string) => {
+    socketRef.current?.emit('like-memo', memoId);
+  }, []);
+
+  const commentMemo = useCallback((memoId: string, content: string) => {
+    socketRef.current?.emit('comment-memo', { memoId, content });
+  }, []);
+
+  const getMemoLikes = useCallback((memoId: string) => {
+    socketRef.current?.emit('get-memo-likes', memoId);
+  }, []);
+
+  const getMemoComments = useCallback((memoId: string) => {
+    socketRef.current?.emit('get-memo-comments', memoId);
+  }, []);
+
   return {
     createMemo,
     updateMemoPosition,
@@ -144,6 +179,10 @@ export const useSocket = ({
     switchBoard,
     adminDeleteMemo,
     adminClearAllMemos,
+    likeMemo,
+    commentMemo,
+    getMemoLikes,
+    getMemoComments,
     socket: socketRef.current,
   };
 }; 

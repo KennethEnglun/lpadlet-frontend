@@ -25,6 +25,7 @@ interface MemoCardProps {
   isDraggable?: boolean;
   isLargeSize?: boolean;
   responsiveConfig?: ResponsiveConfig;
+  onCardClick?: (memo: Memo) => void;
 }
 
 const MemoCard: React.FC<MemoCardProps> = ({
@@ -38,6 +39,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
   isDraggable = true,
   isLargeSize = false,
   responsiveConfig,
+  onCardClick,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(memo.content);
@@ -114,10 +116,19 @@ const MemoCard: React.FC<MemoCardProps> = ({
     height: responsiveConfig ? `${responsiveConfig.memoHeight}px` : (isLargeSize ? '256px' : '128px'), // 改為固定高度
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // 避免在編輯模式或點擊按鈕時觸發
+    if (isEditing || (e.target as HTMLElement).closest('.no-drag')) {
+      return;
+    }
+    onCardClick?.(memo);
+  };
+
   const MemoContent = () => (
     <div
-      className={`memo-card absolute p-4 rounded-lg shadow-lg border-2 border-gray-200 flex flex-col`}
+      className={`memo-card absolute p-4 rounded-lg shadow-lg border-2 border-gray-200 flex flex-col cursor-pointer hover:shadow-xl transition-shadow`}
       style={{ backgroundColor: memo.color, ...cardStyle }}
+      onClick={handleCardClick}
     >
       {/* Drag Handle - 只在可拖拽時顯示 */}
       {isDraggable && (
