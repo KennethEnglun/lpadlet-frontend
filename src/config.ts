@@ -5,12 +5,20 @@ const config = {
     SOCKET_URL: 'http://localhost:5000'
   },
   production: {
-    // Railway後端URL
-    API_URL: import.meta.env.VITE_API_URL || 'https://lpadlet.up.railway.app',
-    SOCKET_URL: import.meta.env.VITE_API_URL || 'https://lpadlet.up.railway.app'
+    // Railway後端URL - 使用原來的URL
+    API_URL: 'https://lpadlet.up.railway.app',
+    SOCKET_URL: 'https://lpadlet.up.railway.app'
   }
 };
 
-const currentConfig = config[import.meta.env.MODE as keyof typeof config] || config.development;
+// 嘗試多個可能的URL
+const possibleUrls = [
+  'https://lpadlet-backend-production.up.railway.app',
+  'https://lpadlet.up.railway.app', 
+  'https://web-production-4a1c.up.railway.app',
+  'https://backend-production.up.railway.app'
+];
+
+const currentConfig = config['production'] || config.development;
 
 export default currentConfig; 

@@ -57,7 +57,17 @@ export const useSocket = ({
       
       const socketUrl = isAdmin ? `${config.SOCKET_URL}?admin=admin123` : config.SOCKET_URL;
       console.log('🔌 正在連接到Socket服務器:', socketUrl);
-      socketRef.current = io(socketUrl);
+      
+      // 改進的Socket.io配置
+      socketRef.current = io(socketUrl, {
+        transports: ['websocket', 'polling'], // 支援多種傳輸方式
+        timeout: 20000, // 20秒超時
+        reconnection: true, // 啟用自動重連
+        reconnectionDelay: 1000, // 重連延遲1秒
+        reconnectionDelayMax: 5000, // 最大重連延遲5秒
+        reconnectionAttempts: 10, // 最多重連10次
+        forceNew: false, // 重用現有連接
+      });
       
       const socket = socketRef.current;
 
@@ -66,12 +76,29 @@ export const useSocket = ({
         console.log('✅ Socket已連接，ID:', socket.id);
       });
 
-      socket.on('disconnect', () => {
-        console.log('❌ Socket已斷開連接');
+      socket.on('disconnect', (reason) => {
+        console.log('❌ Socket已斷開連接，原因:', reason);
       });
 
       socket.on('connect_error', (error) => {
-        console.error('🔥 Socket連接錯誤:', error);
+        console.error('🔥 Socket連接錯誤:', error.message);
+        console.error('🔥 錯誤詳情:', error);
+      });
+
+      socket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Socket重新連接成功，嘗試次數:', attemptNumber);
+      });
+
+      socket.on('reconnect_attempt', (attemptNumber) => {
+        console.log('🔄 嘗試重新連接，第', attemptNumber, '次');
+      });
+
+      socket.on('reconnect_error', (error) => {
+        console.error('🔥 重連失敗:', error.message);
+      });
+
+      socket.on('reconnect_failed', () => {
+        console.error('💀 重連完全失敗，已達最大嘗試次數');
       });
 
       // 設置事件監聽器
@@ -151,6 +178,14 @@ export const useSocket = ({
     return () => {
       if (socketRef.current) {
         console.log('🔌 正在斷開Socket連接');
+        // 移除所有事件監聽器
+        socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('connect_error');
+        socketRef.current.off('reconnect');
+        socketRef.current.off('reconnect_attempt');
+        socketRef.current.off('reconnect_error');
+        socketRef.current.off('reconnect_failed');
         socketRef.current.disconnect();
       }
     };
