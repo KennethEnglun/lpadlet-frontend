@@ -40,11 +40,13 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
   }, [memo.image]);
 
   const handleLike = () => {
+    console.log('點讚按鈕被點擊，memo ID:', memo.id);
     onLike(memo.id);
   };
 
   const handleComment = () => {
     if (commentText.trim()) {
+      console.log('發送評論，memo ID:', memo.id, '內容:', commentText.trim());
       onComment(memo.id, commentText.trim());
       setCommentText('');
     }

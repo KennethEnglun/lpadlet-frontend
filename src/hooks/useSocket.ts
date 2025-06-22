@@ -153,10 +153,12 @@ export const useSocket = ({
 
   // 新增：點讚和評論方法
   const likeMemo = useCallback((memoId: string) => {
+    console.log('Socket發送like-memo事件，memo ID:', memoId);
     socketRef.current?.emit('like-memo', memoId);
   }, []);
 
   const commentMemo = useCallback((memoId: string, content: string) => {
+    console.log('Socket發送comment-memo事件，memo ID:', memoId, '內容:', content);
     socketRef.current?.emit('comment-memo', { memoId, content });
   }, []);
 

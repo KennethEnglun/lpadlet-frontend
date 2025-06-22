@@ -423,11 +423,13 @@ const App: React.FC = () => {
 
   // 處理點讚
   const handleLike = useCallback((memoId: string) => {
+    console.log('App處理點讚，memo ID:', memoId);
     likeMemo(memoId);
   }, [likeMemo]);
 
   // 處理評論
   const handleComment = useCallback((memoId: string, content: string) => {
+    console.log('App處理評論，memo ID:', memoId, '內容:', content);
     commentMemo(memoId, content);
   }, [commentMemo]);
 
