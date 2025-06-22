@@ -55,27 +55,30 @@ const MemoCard: React.FC<MemoCardProps> = ({
     <Draggable
       position={{ x: memo.x, y: memo.y }}
       onStop={handleDragStop}
-      handle=".drag-handle"
+      cancel=".no-drag"
     >
       <div
         className="memo-card absolute w-64 min-h-32 p-4"
         style={{ backgroundColor: memo.color }}
       >
         {/* Drag Handle */}
-        <div className="drag-handle absolute top-0 left-0 w-full h-6 cursor-move" />
+        <div className="drag-handle absolute top-0 left-0 w-full h-8 cursor-move bg-transparent hover:bg-black/5 transition-colors" />
+        
+        {/* Drag Indicator */}
+        <div className="drag-handle absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gray-300 rounded-full cursor-move" />
         
         {/* Action Buttons */}
         {isOwner && (
-          <div className="absolute top-2 right-2 flex space-x-1">
+          <div className="absolute top-2 right-2 flex space-x-1 z-10 no-drag">
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+              className="p-1 text-gray-500 hover:text-blue-600 transition-colors bg-white/70 rounded hover:bg-white/90"
             >
               <Edit3 size={14} />
             </button>
             <button
               onClick={() => onDelete(memo.id)}
-              className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+              className="p-1 text-gray-500 hover:text-red-600 transition-colors bg-white/70 rounded hover:bg-white/90"
             >
               <Trash2 size={14} />
             </button>
@@ -94,7 +97,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
         )}
 
         {/* Content */}
-        <div className="mt-6">
+        <div className="mt-8">
           {isEditing ? (
             <textarea
               ref={textareaRef}
@@ -102,7 +105,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
               onChange={(e) => setContent(e.target.value)}
               onBlur={handleContentSubmit}
               onKeyDown={handleKeyPress}
-              className="w-full bg-transparent border-none resize-none outline-none text-gray-800 text-sm"
+              className="w-full bg-transparent border-none resize-none outline-none text-gray-800 text-sm no-drag"
               placeholder="輸入您的備忘錄..."
               rows={4}
             />

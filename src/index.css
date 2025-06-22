@@ -22,6 +22,10 @@
     @apply bg-white rounded-lg shadow-lg border-2 border-transparent hover:border-purple-300 transition-all duration-200 cursor-move;
   }
   
+  .memo-card:active {
+    @apply cursor-grabbing;
+  }
+  
   .memo-card:hover {
     @apply shadow-xl transform scale-105;
   }
