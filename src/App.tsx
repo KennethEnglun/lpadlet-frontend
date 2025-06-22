@@ -108,6 +108,10 @@ const App: React.FC = () => {
   const [connectedUsers, setConnectedUsers] = useState(0);
   const [currentSocketId, setCurrentSocketId] = useState<string>('');
   
+  // 連接狀態診斷
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  
   // 模態框狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -287,6 +291,36 @@ const App: React.FC = () => {
     onNewLike: handleNewLike,
     onNewComment: handleNewComment,
   });
+
+  // 監聽Socket連接狀態
+  useEffect(() => {
+    if (socket) {
+      const addDebugInfo = (info: string) => {
+        setDebugInfo(prev => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${info}`]);
+      };
+
+      socket.on('connect', () => {
+        setConnectionStatus('connected');
+        addDebugInfo('✅ Socket已連接');
+      });
+
+      socket.on('disconnect', () => {
+        setConnectionStatus('disconnected');
+        addDebugInfo('❌ Socket已斷開');
+      });
+
+      socket.on('connect_error', (error) => {
+        setConnectionStatus('error');
+        addDebugInfo(`🔥 連接錯誤: ${error.message}`);
+      });
+
+      return () => {
+        socket.off('connect');
+        socket.off('disconnect');
+        socket.off('connect_error');
+      };
+    }
+  }, [socket]);
 
   // 獲取當前socket ID
   useEffect(() => {
@@ -497,6 +531,34 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 連接狀態診斷面板 */}
+      <div className="fixed top-2 right-2 z-40 bg-white rounded-lg shadow-lg p-3 max-w-sm">
+        <div className="flex items-center space-x-2 mb-2">
+          <div className={`w-3 h-3 rounded-full ${
+            connectionStatus === 'connected' ? 'bg-green-500' : 
+            connectionStatus === 'connecting' ? 'bg-yellow-500' : 
+            connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-500'
+          }`}></div>
+          <span className="text-sm font-medium">
+            {connectionStatus === 'connected' ? '已連接' : 
+             connectionStatus === 'connecting' ? '連接中' : 
+             connectionStatus === 'error' ? '連接錯誤' : '已斷開'}
+          </span>
+        </div>
+        <div className="text-xs text-gray-600 space-y-1">
+          <div>用戶: {connectedUsers}</div>
+          <div>Socket ID: {currentSocketId.slice(-4)}</div>
+          <div>Memos: {memos.length}</div>
+        </div>
+        {debugInfo.length > 0 && (
+          <div className="mt-2 text-xs text-gray-500 max-h-20 overflow-y-auto">
+            {debugInfo.map((info, index) => (
+              <div key={index} className="truncate">{info}</div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* 頂部工具欄 */}
       <div
