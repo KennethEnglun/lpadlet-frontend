@@ -260,12 +260,15 @@ const App: React.FC = () => {
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
-    // 使用合理的間距，不要太大避免浪費空間
-    const horizontalSpacing = memoWidth + padding;
-    const verticalSpacing = memoHeight + (padding * 2);
+    // 確保有足夠的間距防止重疊
+    const horizontalSpacing = memoWidth + (padding * 2); // 增加水平間距
+    const verticalSpacing = memoHeight + (padding * 3);  // 增加垂直間距
     
+    // 從header下方開始排列，確保不被遮蓋
     const x = col * horizontalSpacing + padding;
-    const y = row * verticalSpacing + padding;
+    const y = row * verticalSpacing + headerHeight + padding;
+    
+    console.log(`Memo ${index}: row=${row}, col=${col}, x=${x}, y=${y}, spacing=${horizontalSpacing}x${verticalSpacing}`);
     
     return { x, y };
   }, [responsiveConfig]);
@@ -275,24 +278,34 @@ const App: React.FC = () => {
     if (!currentBoard) return;
     
     setIsResetting(true);
+    console.log('Starting position reset for board:', currentBoard.name);
+    
     setTimeout(() => {
       setMemos(prev => {
         const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
         const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
+        
+        console.log('Current board memos to reposition:', currentBoardMemosFiltered.length);
         
         // 重新排列當前記事版的memo
         const repositionedMemos = currentBoardMemosFiltered
           .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           .map((memo, index) => {
             const newPos = calculateMemoPosition(index);
+            console.log(`Repositioning memo ${memo.id} from (${memo.x}, ${memo.y}) to (${newPos.x}, ${newPos.y})`);
+            
+            // 同時更新伺服器端的位置
+            updateMemoPosition(memo.id, newPos.x, newPos.y);
+            
             return { ...memo, x: newPos.x, y: newPos.y };
           });
         
+        console.log('Repositioned memos:', repositionedMemos.length);
+        setIsResetting(false);
         return [...otherBoardMemos, ...repositionedMemos];
       });
-      setIsResetting(false);
     }, 200);
-  }, [currentBoard, calculateMemoPosition]);
+  }, [currentBoard, calculateMemoPosition, updateMemoPosition]);
 
   // 處理memo位置更新（禁用拖拽）
   const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
