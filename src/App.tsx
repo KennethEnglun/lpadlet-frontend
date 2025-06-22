@@ -6,7 +6,6 @@ import AdminPanel from './components/AdminPanel';
 import BoardSelector from './components/BoardSelector';
 import { useSocket } from './hooks/useSocket';
 import { Memo, UserCursor, Board, User } from './types';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 // 設備檢測函數
 const getDeviceType = () => {
@@ -484,25 +483,8 @@ const App: React.FC = () => {
       </div>
 
       {/* 主要內容區域，加上縮放及拖移功能 */}
-      <div className="w-full h-full overflow-auto">
-      <TransformWrapper
-        minScale={0.5}
-        maxScale={2}
-        wheel={{ step: 0.1 }}
-        panning={{ velocityDisabled: true }}
-        wrapperStyle={{ width: '100%', height: '100%' }}
-        contentStyle={{ width: '100%', minHeight: '100%' }}
-      >
-        {({ zoomIn, zoomOut, resetTransform }: any) => (
-          <>
-            {/* 縮放控制按鈕 */}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
-              <button onClick={zoomIn} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-lg shadow">+</button>
-              <button onClick={zoomOut} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-lg shadow">-</button>
-              <button onClick={resetTransform} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-xs shadow">重置</button>
-            </div>
-            <TransformComponent>
-              <div className={`w-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32, minHeight: 'calc(100vh - 32px)' }}>
+      <div className="w-full h-full overflow-auto" style={{ paddingTop: effectiveHeaderHeight }}>
+        <div className={`w-full relative p-4`} style={{ minHeight: 'calc(100vh - 32px)' }}>
                 {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
                 {memos
                   .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
@@ -565,11 +547,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            </TransformComponent>
-          </>
-        )}
-      </TransformWrapper>
+        </div>
       </div>
 
       {/* 新增貼文模態框 */}
