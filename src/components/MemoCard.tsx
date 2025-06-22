@@ -30,6 +30,7 @@ const MemoCard: React.FC<MemoCardProps> = ({
   }, [isEditing, content]);
 
   const handleDragStop = (e: any, data: any) => {
+    console.log('Drag stopped:', memo.id, data.x, data.y);
     onUpdatePosition(memo.id, data.x, data.y);
   };
 

@@ -86,6 +86,16 @@ const App: React.FC = () => {
     }
   }, [socket, sendCursorMove]);
 
+  // 處理memo位置更新
+  const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
+    // 立即更新本地狀態
+    setMemos(prev => prev.map(memo => 
+      memo.id === id ? { ...memo, x, y } : memo
+    ));
+    // 發送到服務器
+    updateMemoPosition(id, x, y);
+  }, [updateMemoPosition]);
+
   // 處理新memo創建
   const handleCreateMemo = useCallback((content: string, image?: string, color?: string) => {
     createMemo({
@@ -133,7 +143,7 @@ const App: React.FC = () => {
             key={memo.id}
             memo={memo}
             onDelete={deleteMemo}
-            onUpdatePosition={updateMemoPosition}
+            onUpdatePosition={handleUpdateMemoPosition}
             onUpdateContent={updateMemoContent}
             isOwner={memo.createdBy === currentSocketId}
           />

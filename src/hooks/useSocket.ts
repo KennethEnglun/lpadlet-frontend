@@ -65,12 +65,12 @@ export const useSocket = ({
     socketRef.current?.emit('create-memo', memoData);
   }, []);
 
-  const updateMemoPosition = useCallback((data: UpdateMemoPositionData) => {
-    socketRef.current?.emit('update-memo-position', data);
+  const updateMemoPosition = useCallback((id: string, x: number, y: number) => {
+    socketRef.current?.emit('update-memo-position', { id, x, y });
   }, []);
 
-  const updateMemoContent = useCallback((data: UpdateMemoContentData) => {
-    socketRef.current?.emit('update-memo-content', data);
+  const updateMemoContent = useCallback((id: string, content: string) => {
+    socketRef.current?.emit('update-memo-content', { id, content });
   }, []);
 
   const deleteMemo = useCallback((memoId: string) => {
