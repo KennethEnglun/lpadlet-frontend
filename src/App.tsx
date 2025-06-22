@@ -285,7 +285,9 @@ const App: React.FC = () => {
       {/* 主要內容區域 */}
       <div className="pt-20 w-full h-full relative">
         {/* 渲染所有memo */}
-        {memos.map((memo) => (
+        {memos
+          .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
+          .map((memo) => (
           <MemoCard
             key={memo.id}
             memo={memo}
@@ -321,7 +323,7 @@ const App: React.FC = () => {
         ))}
 
         {/* 空狀態 */}
-        {memos.length === 0 && currentBoard && (
+        {currentBoard && memos.filter(memo => memo.boardId === currentBoard.id).length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📝</div>
@@ -390,7 +392,7 @@ const App: React.FC = () => {
           onClose={() => setIsAdminPanelOpen(false)}
           boards={boards}
           currentBoard={currentBoard}
-          memos={memos}
+          memos={currentBoard ? memos.filter(memo => memo.boardId === currentBoard.id) : []}
           onCreateBoard={handleBoardCreate}
           onDeleteBoard={handleBoardDelete}
           onDeleteMemo={handleAdminDeleteMemo}
