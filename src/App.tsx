@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Users, Settings, Layout, Monitor, Smartphone, Tablet, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Users, Settings, Layout, Monitor, Smartphone, Tablet, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
 import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
 import AdminPanel from './components/AdminPanel';
@@ -109,6 +109,8 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   // Header 折疊狀態（行動裝置可收合）
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  // 重置狀態
+  const [isResetting, setIsResetting] = useState(false);
 
   // 檢查Admin權限和設置歡迎彈窗顯示
   useEffect(() => {
@@ -253,6 +255,30 @@ const App: React.FC = () => {
     return { x, y };
   }, [responsiveConfig]);
 
+  // 手動重置所有memo位置
+  const handleResetPositions = useCallback(() => {
+    if (!currentBoard) return;
+    
+    setIsResetting(true);
+    setTimeout(() => {
+      setMemos(prev => {
+        const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
+        const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
+        
+        // 重新排列當前記事版的memo
+        const repositionedMemos = currentBoardMemosFiltered
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map((memo, index) => {
+            const newPos = calculateMemoPosition(index);
+            return { ...memo, x: newPos.x, y: newPos.y };
+          });
+        
+        return [...otherBoardMemos, ...repositionedMemos];
+      });
+      setIsResetting(false);
+    }, 200);
+  }, [currentBoard, calculateMemoPosition]);
+
   // 處理memo位置更新（禁用拖拽）
   const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
     console.log('Position update blocked for memo:', id);
@@ -333,7 +359,7 @@ const App: React.FC = () => {
 
   // 重新排列memo位置
   useEffect(() => {
-    if (currentBoard) {
+    if (currentBoard && !isResetting) {
       const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
       console.log('Memo display check:', {
         totalMemos: memos.length,
@@ -342,48 +368,30 @@ const App: React.FC = () => {
         memosData: currentBoardMemos
       });
       
-      // 強制重新排列所有memo以防止重疊 - 使用setTimeout確保狀態更新
-      setTimeout(() => {
-        setMemos(prev => {
-          const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
-          const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
-          
-          // 重新排列當前記事版的memo
-          const repositionedMemos = currentBoardMemosFiltered
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) // 按建立時間排序
-            .map((memo, index) => {
-              const newPos = calculateMemoPosition(index);
-              return { ...memo, x: newPos.x, y: newPos.y };
-            });
-          
-          return [...otherBoardMemos, ...repositionedMemos];
-        });
-      }, 100);
+      // 只在memo數量變化時重新排列，避免衝突
+      const timeoutId = setTimeout(() => {
+        if (!isResetting) {
+          handleResetPositions();
+        }
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [memos.length, currentBoard, calculateMemoPosition]);
+  }, [memos.length, currentBoard, isResetting, handleResetPositions]);
 
   // 設備變化時重新排列memo
   useEffect(() => {
-    if (currentBoard && memos.length > 0) {
+    if (currentBoard && memos.length > 0 && !isResetting) {
       console.log('Device changed, repositioning memos for:', deviceType);
-      setTimeout(() => {
-        setMemos(prev => {
-          const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
-          const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
-          
-          // 重新排列當前記事版的memo
-          const repositionedMemos = currentBoardMemosFiltered
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-            .map((memo, index) => {
-              const newPos = calculateMemoPosition(index);
-              return { ...memo, x: newPos.x, y: newPos.y };
-            });
-          
-          return [...otherBoardMemos, ...repositionedMemos];
-        });
-      }, 150);
+      const timeoutId = setTimeout(() => {
+        if (!isResetting) {
+          handleResetPositions();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [deviceType, responsiveConfig, currentBoard, calculateMemoPosition]);
+  }, [deviceType, responsiveConfig, currentBoard, isResetting, handleResetPositions]);
 
   const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
 
@@ -506,6 +514,21 @@ const App: React.FC = () => {
             >
               <Plus size={20} />
               <span>新增貼文</span>
+            </button>
+            
+            {/* 重置排列按鈕 */}
+            <button
+              onClick={handleResetPositions}
+              disabled={!currentBoard || isResetting}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                isResetting 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+              }`}
+              title="重新排列所有貼文"
+            >
+              <RefreshCw size={16} className={isResetting ? 'animate-spin' : ''} />
+              <span>{isResetting ? '重置中...' : '重置排列'}</span>
             </button>
           </div>
         </div>
