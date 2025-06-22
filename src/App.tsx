@@ -243,12 +243,12 @@ const App: React.FC = () => {
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
-    // 確保有足夠的間距防止重疊
-    const horizontalSpacing = memoWidth + (padding * 2);
-    const verticalSpacing = memoHeight + (padding * 3);
+    // 使用更大的間距確保完全不重疊
+    const horizontalSpacing = memoWidth + (padding * 4); // 增加水平間距
+    const verticalSpacing = memoHeight + (padding * 6); // 增加垂直間距
     
-    const x = col * horizontalSpacing + padding;
-    const y = row * verticalSpacing + padding;
+    const x = col * horizontalSpacing + (padding * 2);
+    const y = row * verticalSpacing + (padding * 2);
     
     return { x, y };
   }, [responsiveConfig]);
@@ -342,16 +342,23 @@ const App: React.FC = () => {
         memosData: currentBoardMemos
       });
       
-      // 強制重新排列所有memo以防止重疊
-      setMemos(prev => prev.map(memo => {
-        if (memo.boardId === currentBoard.id) {
+      // 強制重新排列所有memo以防止重疊 - 使用setTimeout確保狀態更新
+      setTimeout(() => {
+        setMemos(prev => {
           const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
-          const index = currentBoardMemosFiltered.findIndex(m => m.id === memo.id);
-          const newPos = calculateMemoPosition(index);
-          return { ...memo, x: newPos.x, y: newPos.y };
-        }
-        return memo;
-      }));
+          const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
+          
+          // 重新排列當前記事版的memo
+          const repositionedMemos = currentBoardMemosFiltered
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) // 按建立時間排序
+            .map((memo, index) => {
+              const newPos = calculateMemoPosition(index);
+              return { ...memo, x: newPos.x, y: newPos.y };
+            });
+          
+          return [...otherBoardMemos, ...repositionedMemos];
+        });
+      }, 100);
     }
   }, [memos.length, currentBoard, calculateMemoPosition]);
 
@@ -359,15 +366,22 @@ const App: React.FC = () => {
   useEffect(() => {
     if (currentBoard && memos.length > 0) {
       console.log('Device changed, repositioning memos for:', deviceType);
-      setMemos(prev => prev.map(memo => {
-        if (memo.boardId === currentBoard.id) {
+      setTimeout(() => {
+        setMemos(prev => {
           const currentBoardMemosFiltered = prev.filter(m => m.boardId === currentBoard.id);
-          const index = currentBoardMemosFiltered.findIndex(m => m.id === memo.id);
-          const newPos = calculateMemoPosition(index);
-          return { ...memo, x: newPos.x, y: newPos.y };
-        }
-        return memo;
-      }));
+          const otherBoardMemos = prev.filter(m => m.boardId !== currentBoard.id);
+          
+          // 重新排列當前記事版的memo
+          const repositionedMemos = currentBoardMemosFiltered
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+            .map((memo, index) => {
+              const newPos = calculateMemoPosition(index);
+              return { ...memo, x: newPos.x, y: newPos.y };
+            });
+          
+          return [...otherBoardMemos, ...repositionedMemos];
+        });
+      }, 150);
     }
   }, [deviceType, responsiveConfig, currentBoard, calculateMemoPosition]);
 

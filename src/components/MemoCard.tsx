@@ -171,11 +171,12 @@ const MemoCard: React.FC<MemoCardProps> = ({
             <div 
               className="w-full bg-gray-200 rounded-md flex items-center justify-center"
               style={{
-                height: responsiveConfig
-                  ? responsiveConfig.memoHeight * 0.4
+                maxHeight: responsiveConfig
+                  ? `${responsiveConfig.memoHeight * 0.5}px`
                   : isLargeSize
-                    ? 192
-                    : 128
+                    ? '200px'
+                    : '120px',
+                minHeight: '80px'
               }}
             >
               <div className="text-gray-400 text-sm">載入中...</div>
@@ -185,11 +186,12 @@ const MemoCard: React.FC<MemoCardProps> = ({
             <div 
               className="w-full bg-gray-100 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300"
               style={{
-                height: responsiveConfig
-                  ? responsiveConfig.memoHeight * 0.4
+                maxHeight: responsiveConfig
+                  ? `${responsiveConfig.memoHeight * 0.5}px`
                   : isLargeSize
-                    ? 192
-                    : 128
+                    ? '200px'
+                    : '120px',
+                minHeight: '80px'
               }}
             >
               <div className="text-gray-400 text-sm">圖片載入失敗</div>
@@ -202,11 +204,14 @@ const MemoCard: React.FC<MemoCardProps> = ({
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
-              height: responsiveConfig
-                ? responsiveConfig.memoHeight * 0.4
+              maxHeight: responsiveConfig
+                ? `${responsiveConfig.memoHeight * 0.5}px`
                 : isLargeSize
-                  ? 192 // 相當於 h-48
-                  : 128 // 相當於 h-32
+                  ? '200px'
+                  : '120px',
+              objectFit: 'contain',
+              width: '100%',
+              height: 'auto'
             }}
             onLoad={handleImageLoad}
             onError={handleImageError}
