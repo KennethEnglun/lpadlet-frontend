@@ -489,7 +489,7 @@ const App: React.FC = () => {
               <button onClick={resetTransform} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-xs shadow">重置</button>
             </div>
             <TransformComponent>
-              <div className={`pt-32 w-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32 }}>
+              <div className={`pt-32 w-full min-h-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32 }}>
                 {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
                 {memos
                   .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
