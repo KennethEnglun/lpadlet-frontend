@@ -1,16 +1,29 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Users, MousePointer } from 'lucide-react';
+import { Plus, Users, MousePointer, Settings, Layout } from 'lucide-react';
 import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
+import AdminPanel from './components/AdminPanel';
+import BoardSelector from './components/BoardSelector';
 import { useSocket } from './hooks/useSocket';
-import { Memo, UserCursor } from './types';
+import { Memo, UserCursor, Board, User } from './types';
 
 const App: React.FC = () => {
+  // 基本狀態
   const [memos, setMemos] = useState<Memo[]>([]);
   const [userCursors, setUserCursors] = useState<Map<string, UserCursor>>(new Map());
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState(0);
   const [currentSocketId, setCurrentSocketId] = useState<string>('');
+  
+  // 模態框狀態
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isBoardSelectorOpen, setIsBoardSelectorOpen] = useState(false);
+  
+  // 記事版和用戶狀態
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Socket事件處理器
   const handleMemosReceived = useCallback((receivedMemos: Memo[]) => {
@@ -53,6 +66,30 @@ const App: React.FC = () => {
     setConnectedUsers(count);
   }, []);
 
+  // 新增：記事版相關事件處理器
+  const handleBoardsReceived = useCallback((receivedBoards: Board[]) => {
+    setBoards(receivedBoards);
+    if (receivedBoards.length > 0 && !currentBoard) {
+      setCurrentBoard(receivedBoards[0]);
+    }
+  }, [currentBoard]);
+
+  const handleBoardCreated = useCallback((board: Board) => {
+    setBoards(prev => [...prev, board]);
+  }, []);
+
+  const handleBoardDeleted = useCallback((boardId: string) => {
+    setBoards(prev => prev.filter(b => b.id !== boardId));
+    if (currentBoard?.id === boardId) {
+      setCurrentBoard(boards.find(b => b.id !== boardId) || null);
+    }
+  }, [currentBoard, boards]);
+
+  const handleUserInfo = useCallback((user: User) => {
+    setCurrentUser(user);
+    setIsAdmin(user.isAdmin);
+  }, []);
+
   // 使用Socket Hook
   const { 
     createMemo, 
@@ -60,6 +97,11 @@ const App: React.FC = () => {
     updateMemoContent, 
     deleteMemo, 
     sendCursorMove,
+    createBoard,
+    deleteBoard,
+    adminDeleteMemo,
+    adminClearAllMemos,
+    switchBoard,
     socket
   } = useSocket({
     onMemosReceived: handleMemosReceived,
@@ -70,6 +112,10 @@ const App: React.FC = () => {
     onUserCursor: handleUserCursor,
     onUserDisconnected: handleUserDisconnected,
     onUserCountChanged: handleUserCountChanged,
+    onBoardsReceived: handleBoardsReceived,
+    onBoardCreated: handleBoardCreated,
+    onBoardDeleted: handleBoardDeleted,
+    onUserInfo: handleUserInfo,
   });
 
   // 獲取當前socket ID
@@ -78,6 +124,15 @@ const App: React.FC = () => {
       setCurrentSocketId(socket.id || '');
     }
   }, [socket]);
+
+  // 檢查Admin權限
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const adminParam = urlParams.get('admin');
+    if (adminParam === 'admin123') {
+      setIsAdmin(true);
+    }
+  }, []);
 
   // 處理鼠標移動
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -98,18 +153,65 @@ const App: React.FC = () => {
 
   // 處理新memo創建
   const handleCreateMemo = useCallback((content: string, image?: string, color?: string) => {
+    if (!currentBoard) return;
+    
     createMemo({
       content,
       image,
       color,
       x: Math.random() * (window.innerWidth - 300),
       y: Math.random() * (window.innerHeight - 200) + 100,
+      boardId: currentBoard.id,
     });
-  }, [createMemo]);
+  }, [createMemo, currentBoard]);
+
+  // 處理記事版切換
+  const handleBoardSwitch = useCallback((board: Board) => {
+    setCurrentBoard(board);
+    switchBoard(board.id);
+    setIsBoardSelectorOpen(false);
+  }, [switchBoard]);
+
+  // 處理記事版創建
+  const handleBoardCreate = useCallback((name: string, theme: string, description?: string) => {
+    createBoard({ name, theme, description });
+  }, [createBoard]);
+
+  // 處理記事版刪除
+  const handleBoardDelete = useCallback((boardId: string) => {
+    deleteBoard(boardId);
+  }, [deleteBoard]);
+
+  // 處理Admin刪除memo
+  const handleAdminDeleteMemo = useCallback((memoId: string) => {
+    adminDeleteMemo(memoId);
+  }, [adminDeleteMemo]);
+
+  // 處理Admin清空所有memo
+  const handleAdminClearAll = useCallback(() => {
+    if (currentBoard) {
+      adminClearAllMemos(currentBoard.id);
+    }
+  }, [adminClearAllMemos, currentBoard]);
+
+  // 獲取當前記事版的背景主題
+  const getBoardTheme = () => {
+    if (!currentBoard) return 'from-purple-50 to-pink-50';
+    
+    const themes = {
+      purple: 'from-purple-50 to-pink-50',
+      blue: 'from-blue-50 to-cyan-50',
+      green: 'from-green-50 to-emerald-50',
+      orange: 'from-orange-50 to-red-50',
+      pink: 'from-pink-50 to-rose-50',
+    };
+    
+    return themes[currentBoard.theme as keyof typeof themes] || themes.purple;
+  };
 
   return (
     <div 
-      className="relative w-full h-screen overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50"
+      className={`relative w-full h-screen overflow-hidden bg-gradient-to-br ${getBoardTheme()}`}
       onMouseMove={handleMouseMove}
     >
       {/* 頂部工具欄 */}
@@ -119,19 +221,64 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               LPadlet
             </h1>
+            
+            {/* 記事版信息 */}
+            {currentBoard && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setIsBoardSelectorOpen(true)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+                >
+                  <Layout size={16} />
+                  <span className="text-sm font-medium">{currentBoard.name}</span>
+                </button>
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Users size={16} />
               <span>{connectedUsers} 位用戶在線</span>
             </div>
+            
+            {/* Admin 標識 */}
+            {isAdmin && (
+              <div className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
+                管理員
+              </div>
+            )}
           </div>
           
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="add-memo-btn flex items-center space-x-2"
-          >
-            <Plus size={20} />
-            <span>新增備忘錄</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Admin 控制台按鈕 */}
+            {isAdmin && (
+              <button
+                onClick={() => setIsAdminPanelOpen(true)}
+                className="flex items-center space-x-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+              >
+                <Settings size={16} />
+                <span>管理控制台</span>
+              </button>
+            )}
+            
+            {/* 記事版選擇按鈕 */}
+            <button
+              onClick={() => setIsBoardSelectorOpen(true)}
+              className="flex items-center space-x-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            >
+              <Layout size={16} />
+              <span>記事版</span>
+            </button>
+            
+            {/* 新增備忘錄按鈕 */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="add-memo-btn flex items-center space-x-2"
+              disabled={!currentBoard}
+            >
+              <Plus size={20} />
+              <span>新增備忘錄</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -146,6 +293,8 @@ const App: React.FC = () => {
             onUpdatePosition={handleUpdateMemoPosition}
             onUpdateContent={updateMemoContent}
             isOwner={memo.createdBy === currentSocketId}
+            isAdmin={isAdmin}
+            onAdminDelete={handleAdminDeleteMemo}
           />
         ))}
 
@@ -172,12 +321,12 @@ const App: React.FC = () => {
         ))}
 
         {/* 空狀態 */}
-        {memos.length === 0 && (
+        {memos.length === 0 && currentBoard && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📝</div>
               <h2 className="text-2xl font-semibold text-gray-700 mb-2">
-                歡迎來到 LPadlet！
+                歡迎來到 {currentBoard.name}！
               </h2>
               <p className="text-gray-500 mb-6">
                 點擊上方按鈕創建您的第一個備忘錄
@@ -192,6 +341,28 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* 無記事版狀態 */}
+        {!currentBoard && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📋</div>
+              <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+                請選擇一個記事版
+              </h2>
+              <p className="text-gray-500 mb-6">
+                點擊上方記事版按鈕來選擇或創建記事版
+              </p>
+              <button
+                onClick={() => setIsBoardSelectorOpen(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              >
+                <Layout size={20} />
+                <span>選擇記事版</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 新增備忘錄模態框 */}
@@ -201,11 +372,39 @@ const App: React.FC = () => {
         onSubmit={handleCreateMemo}
       />
 
+      {/* 記事版選擇器 */}
+      <BoardSelector
+        isOpen={isBoardSelectorOpen}
+        onClose={() => setIsBoardSelectorOpen(false)}
+        boards={boards}
+        currentBoard={currentBoard}
+        onSelectBoard={handleBoardSwitch}
+        onCreateBoard={handleBoardCreate}
+        canCreateBoard={isAdmin}
+      />
+
+      {/* Admin 控制台 */}
+      {isAdmin && (
+        <AdminPanel
+          isOpen={isAdminPanelOpen}
+          onClose={() => setIsAdminPanelOpen(false)}
+          boards={boards}
+          currentBoard={currentBoard}
+          memos={memos}
+          onCreateBoard={handleBoardCreate}
+          onDeleteBoard={handleBoardDelete}
+          onDeleteMemo={handleAdminDeleteMemo}
+          onClearAllMemos={handleAdminClearAll}
+          connectedUsers={connectedUsers}
+        />
+      )}
+
       {/* 說明文字 */}
       <div className="absolute bottom-4 left-4 text-sm text-gray-500">
         <p>💡 拖動備忘錄來移動位置</p>
         <p>✏️ 點擊編輯按鈕修改內容</p>
         <p>🌐 所有變更都會即時同步給其他用戶</p>
+        {isAdmin && <p>👑 管理員模式：可以刪除任何貼文和管理記事版</p>}
       </div>
     </div>
   );

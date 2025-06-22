@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronDown, Globe, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, Globe, Lock, Plus, X } from 'lucide-react';
 import { Board } from '../types';
 
 interface BoardSelectorProps {
@@ -7,7 +7,9 @@ interface BoardSelectorProps {
   currentBoard: Board | null;
   onSelectBoard: (board: Board) => void;
   isOpen: boolean;
-  onToggle: () => void;
+  onClose: () => void;
+  onCreateBoard: (name: string, theme: string, description?: string) => void;
+  canCreateBoard: boolean;
 }
 
 const BoardSelector: React.FC<BoardSelectorProps> = ({
@@ -15,73 +17,135 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
   currentBoard,
   onSelectBoard,
   isOpen,
-  onToggle,
+  onClose,
+  onCreateBoard,
+  canCreateBoard,
 }) => {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newBoardName, setNewBoardName] = useState('');
+  const [newBoardTheme, setNewBoardTheme] = useState('purple');
+  const [newBoardDescription, setNewBoardDescription] = useState('');
+
   const getThemeGradient = (theme: string) => {
     const themes: Record<string, string> = {
-      default: 'from-purple-50 to-pink-50',
-      ocean: 'from-blue-50 to-cyan-50',
-      forest: 'from-green-50 to-emerald-50',
-      sunset: 'from-orange-50 to-red-50',
-      night: 'from-gray-800 to-gray-900',
+      purple: 'from-purple-50 to-pink-50',
+      blue: 'from-blue-50 to-cyan-50',
+      green: 'from-green-50 to-emerald-50',
+      orange: 'from-orange-50 to-red-50',
+      pink: 'from-pink-50 to-rose-50',
     };
-    return themes[theme] || themes.default;
+    return themes[theme] || themes.purple;
   };
 
   const getThemeColors = (theme: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> = {
-      default: { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
-      ocean: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
-      forest: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
-      sunset: { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200' },
-      night: { bg: 'bg-gray-700', text: 'text-gray-100', border: 'border-gray-600' },
+      purple: { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
+      blue: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+      green: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+      orange: { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200' },
+      pink: { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' },
     };
-    return colors[theme] || colors.default;
+    return colors[theme] || colors.purple;
   };
 
-  return (
-    <div className="relative">
-      {/* 當前選中的記事版 */}
-      <button
-        onClick={onToggle}
-        className="flex items-center space-x-3 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg px-4 py-2 hover:bg-white/95 transition-colors"
-      >
-        {currentBoard ? (
-          <>
-            <div
-              className={`w-4 h-4 rounded ${getThemeColors(currentBoard.theme).bg}`}
-            />
-            <span className="font-medium">{currentBoard.name}</span>
-            {currentBoard.isPublic ? (
-              <Globe size={16} className="text-gray-500" />
-            ) : (
-              <Lock size={16} className="text-gray-500" />
-            )}
-          </>
-        ) : (
-          <span className="text-gray-500">選擇記事版</span>
-        )}
-        <ChevronDown
-          size={16}
-          className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
+  const handleCreateBoard = () => {
+    if (newBoardName.trim()) {
+      onCreateBoard(newBoardName.trim(), newBoardTheme, newBoardDescription.trim() || undefined);
+      setNewBoardName('');
+      setNewBoardDescription('');
+      setNewBoardTheme('purple');
+      setShowCreateForm(false);
+    }
+  };
 
-      {/* 下拉選單 */}
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl w-96 max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800">選擇記事版</h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="max-h-96 overflow-y-auto">
+          {/* Create Board Form */}
+          {showCreateForm && canCreateBoard && (
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <h4 className="font-medium text-gray-800 mb-3">創建新記事版</h4>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="記事版名稱"
+                  value={newBoardName}
+                  onChange={(e) => setNewBoardName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <input
+                  type="text"
+                  placeholder="描述（可選）"
+                  value={newBoardDescription}
+                  onChange={(e) => setNewBoardDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">主題色彩</label>
+                  <div className="flex space-x-2">
+                    {['purple', 'blue', 'green', 'orange', 'pink'].map((theme) => (
+                      <button
+                        key={theme}
+                        onClick={() => setNewBoardTheme(theme)}
+                        className={`w-8 h-8 rounded-full ${getThemeColors(theme).bg} ${
+                          newBoardTheme === theme ? 'ring-2 ring-gray-400' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleCreateBoard}
+                    className="flex-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                  >
+                    創建
+                  </button>
+                  <button
+                    onClick={() => setShowCreateForm(false)}
+                    className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Board List */}
           <div className="p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">選擇記事版</h3>
+            {/* Create Board Button */}
+            {canCreateBoard && !showCreateForm && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors mb-4 flex items-center justify-center space-x-2"
+              >
+                <Plus size={20} className="text-gray-500" />
+                <span className="text-gray-600">創建新記事版</span>
+              </button>
+            )}
+
             <div className="space-y-2">
               {boards.map((board) => {
                 const themeColors = getThemeColors(board.theme);
                 return (
                   <button
                     key={board.id}
-                    onClick={() => {
-                      onSelectBoard(board);
-                      onToggle();
-                    }}
+                    onClick={() => onSelectBoard(board)}
                     className={`w-full text-left p-3 rounded-lg border-2 transition-all hover:shadow-md ${
                       currentBoard?.id === board.id
                         ? `${themeColors.border} ${themeColors.bg}`
@@ -122,25 +186,29 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
               <div className="text-center py-8 text-gray-500">
                 <Globe size={48} className="mx-auto mb-4 text-gray-300" />
                 <p>尚無可用的記事版</p>
-                <p className="text-sm">請聯繫管理員創建記事版</p>
+                {canCreateBoard ? (
+                  <p className="text-sm">點擊上方按鈕創建記事版</p>
+                ) : (
+                  <p className="text-sm">請聯繫管理員創建記事版</p>
+                )}
               </div>
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
 const getThemeName = (theme: string) => {
   const names: Record<string, string> = {
-    default: '預設',
-    ocean: '海洋',
-    forest: '森林',
-    sunset: '夕陽',
-    night: '夜晚',
+    purple: '紫色',
+    blue: '藍色',
+    green: '綠色',
+    orange: '橙色',
+    pink: '粉色',
   };
-  return names[theme] || '預設';
+  return names[theme] || '紫色';
 };
 
 export default BoardSelector; 

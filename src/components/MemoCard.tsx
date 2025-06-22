@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
-import { Trash2, Edit3, Image as ImageIcon } from 'lucide-react';
+import { Trash2, Edit3, Image as ImageIcon, Shield } from 'lucide-react';
 import { Memo } from '../types';
 
 interface MemoCardProps {
@@ -9,6 +9,8 @@ interface MemoCardProps {
   onUpdatePosition: (id: string, x: number, y: number) => void;
   onUpdateContent: (id: string, content: string) => void;
   isOwner: boolean;
+  isAdmin?: boolean;
+  onAdminDelete?: (id: string) => void;
 }
 
 const MemoCard: React.FC<MemoCardProps> = ({
@@ -17,6 +19,8 @@ const MemoCard: React.FC<MemoCardProps> = ({
   onUpdatePosition,
   onUpdateContent,
   isOwner,
+  isAdmin = false,
+  onAdminDelete,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(memo.content);
@@ -52,6 +56,12 @@ const MemoCard: React.FC<MemoCardProps> = ({
     }
   };
 
+  const handleAdminDelete = () => {
+    if (onAdminDelete && window.confirm('確定要刪除這個備忘錄嗎？（管理員操作）')) {
+      onAdminDelete(memo.id);
+    }
+  };
+
   return (
     <Draggable
       position={{ x: memo.x, y: memo.y }}
@@ -73,22 +83,36 @@ const MemoCard: React.FC<MemoCardProps> = ({
         <div className="drag-handle absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gray-300 rounded-full cursor-move" />
         
         {/* Action Buttons */}
-        {isOwner && (
-          <div className="absolute top-2 right-2 flex space-x-1 z-10 no-drag">
+        <div className="absolute top-2 right-2 flex space-x-1 z-10 no-drag">
+          {/* Owner Controls */}
+          {isOwner && (
+            <>
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="p-1 text-gray-500 hover:text-blue-600 transition-colors bg-white/70 rounded hover:bg-white/90"
+              >
+                <Edit3 size={14} />
+              </button>
+              <button
+                onClick={() => onDelete(memo.id)}
+                className="p-1 text-gray-500 hover:text-red-600 transition-colors bg-white/70 rounded hover:bg-white/90"
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+          
+          {/* Admin Controls */}
+          {isAdmin && !isOwner && (
             <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="p-1 text-gray-500 hover:text-blue-600 transition-colors bg-white/70 rounded hover:bg-white/90"
+              onClick={handleAdminDelete}
+              className="p-1 text-red-500 hover:text-red-700 transition-colors bg-red-100/70 rounded hover:bg-red-100/90"
+              title="管理員刪除"
             >
-              <Edit3 size={14} />
+              <Shield size={14} />
             </button>
-            <button
-              onClick={() => onDelete(memo.id)}
-              className="p-1 text-gray-500 hover:text-red-600 transition-colors bg-white/70 rounded hover:bg-white/90"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Image */}
         {memo.image && (
