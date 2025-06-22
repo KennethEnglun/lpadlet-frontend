@@ -7,6 +7,7 @@ export interface Memo {
   color: string;
   createdAt: Date;
   createdBy: string;
+  boardId: string;
 }
 
 export interface UserCursor {
@@ -21,6 +22,7 @@ export interface CreateMemoData {
   x?: number;
   y?: number;
   color?: string;
+  boardId: string;
 }
 
 export interface UpdateMemoPositionData {
@@ -32,4 +34,27 @@ export interface UpdateMemoPositionData {
 export interface UpdateMemoContentData {
   id: string;
   content: string;
+}
+
+export interface Board {
+  id: string;
+  name: string;
+  theme: string;
+  description?: string;
+  createdAt: Date;
+  createdBy: string;
+  isPublic: boolean;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  isAdmin: boolean;
+  joinedAt: Date;
+}
+
+export interface AdminAction {
+  type: 'DELETE_MEMO' | 'CREATE_BOARD' | 'DELETE_BOARD' | 'UPDATE_BOARD';
+  targetId: string;
+  data?: any;
 } 

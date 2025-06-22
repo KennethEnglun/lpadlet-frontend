@@ -56,7 +56,11 @@ const MemoCard: React.FC<MemoCardProps> = ({
     <Draggable
       position={{ x: memo.x, y: memo.y }}
       onStop={handleDragStop}
+      onDrag={(e, data) => {
+        // 拖拽過程中的即時位置更新，減少遲緩感
+      }}
       cancel=".no-drag"
+      enableUserSelectHack={false}
     >
       <div
         className="memo-card absolute w-64 min-h-32 p-4"
