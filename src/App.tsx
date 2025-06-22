@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Users, Settings, Layout } from 'lucide-react';
+import { Plus, Users, Settings, Layout, Monitor, Smartphone, Tablet } from 'lucide-react';
 import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
 import AdminPanel from './components/AdminPanel';
@@ -7,7 +7,89 @@ import BoardSelector from './components/BoardSelector';
 import { useSocket } from './hooks/useSocket';
 import { Memo, UserCursor, Board, User } from './types';
 
+// 設備檢測函數
+const getDeviceType = () => {
+  const userAgent = navigator.userAgent;
+  const screenWidth = window.screen.width;
+  
+  // 檢測iOS設備
+  if (/iPad/.test(userAgent)) {
+    return 'iPad';
+  }
+  if (/iPhone/.test(userAgent)) {
+    return 'iPhone';
+  }
+  
+  // 檢測Android設備
+  if (/Android/.test(userAgent)) {
+    if (screenWidth > 768) {
+      return 'Android Tablet';
+    }
+    return 'Android Phone';
+  }
+  
+  // 檢測其他移動設備
+  if (screenWidth <= 768) {
+    return 'Mobile';
+  }
+  
+  // 檢測平板
+  if (screenWidth > 768 && screenWidth <= 1024) {
+    return 'Tablet';
+  }
+  
+  // 默認為電腦
+  return 'Desktop';
+};
+
+// 根據設備類型獲取響應式配置
+const getResponsiveConfig = (deviceType: string) => {
+  switch (deviceType) {
+    case 'iPhone':
+    case 'Android Phone':
+    case 'Mobile':
+      return {
+        memosPerRow: 2,
+        memoWidth: 280,
+        memoHeight: 200,
+        padding: 10,
+        headerHeight: 120,
+        fontSize: 'text-sm',
+        titleSize: 'text-lg',
+        showDeviceIcon: '📱'
+      };
+    case 'iPad':
+    case 'Android Tablet':
+    case 'Tablet':
+      return {
+        memosPerRow: 3,
+        memoWidth: 320,
+        memoHeight: 220,
+        padding: 15,
+        headerHeight: 100,
+        fontSize: 'text-base',
+        titleSize: 'text-xl',
+        showDeviceIcon: '📱'
+      };
+    default: // Desktop
+      return {
+        memosPerRow: 5,
+        memoWidth: 512,
+        memoHeight: 256,
+        padding: 20,
+        headerHeight: 100,
+        fontSize: 'text-base',
+        titleSize: 'text-2xl',
+        showDeviceIcon: '💻'
+      };
+  }
+};
+
 const App: React.FC = () => {
+  // 設備檢測
+  const [deviceType, setDeviceType] = useState(getDeviceType());
+  const [responsiveConfig, setResponsiveConfig] = useState(getResponsiveConfig(deviceType));
+  
   // 基本狀態
   const [memos, setMemos] = useState<Memo[]>([]);
   const [userCursors, setUserCursors] = useState<Map<string, UserCursor>>(new Map());
@@ -25,6 +107,33 @@ const App: React.FC = () => {
   const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // 檢查Admin權限和設置歡迎彈窗顯示
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const adminParam = urlParams.get('admin');
+    const isAdminUser = adminParam === 'admin123';
+    setIsAdmin(isAdminUser);
+    
+    // Admin用戶不顯示歡迎彈窗
+    if (isAdminUser) {
+      setShowWelcome(false);
+    }
+  }, []);
+
+  // 設備變化檢測
+  useEffect(() => {
+    const handleResize = () => {
+      const newDeviceType = getDeviceType();
+      if (newDeviceType !== deviceType) {
+        setDeviceType(newDeviceType);
+        setResponsiveConfig(getResponsiveConfig(newDeviceType));
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [deviceType]);
 
   // Socket事件處理器
   const handleMemosReceived = useCallback((receivedMemos: Memo[]) => {
@@ -66,10 +175,11 @@ const App: React.FC = () => {
   // 新增：記事版相關事件處理器
   const handleBoardsReceived = useCallback((receivedBoards: Board[]) => {
     setBoards(receivedBoards);
-    if (receivedBoards.length > 0 && !currentBoard) {
-      // 不自動選擇記事版，讓用戶手動選擇
+    // Admin用戶可以不自動選擇記事版
+    if (receivedBoards.length > 0 && !currentBoard && !isAdmin) {
+      // 普通用戶不自動選擇，讓用戶手動選擇
     }
-  }, [currentBoard]);
+  }, [currentBoard, isAdmin]);
 
   const handleBoardCreated = useCallback((board: Board) => {
     setBoards(prev => [...prev, board]);
@@ -122,30 +232,18 @@ const App: React.FC = () => {
     }
   }, [socket]);
 
-  // 檢查Admin權限
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const adminParam = urlParams.get('admin');
-    if (adminParam === 'admin123') {
-      setIsAdmin(true);
-    }
-  }, []);
-
-  // 計算memo的自動排列位置
+  // 計算memo的響應式自動排列位置
   const calculateMemoPosition = useCallback((index: number) => {
-    const memoWidth = 512; // 放大一倍：原本256 -> 512
-    const memoHeight = 256; // 放大一倍：原本128 -> 256
-    const padding = 20;
-    const memosPerRow = 5;
+    const { memosPerRow, memoWidth, memoHeight, padding, headerHeight } = responsiveConfig;
     
     const row = Math.floor(index / memosPerRow);
     const col = index % memosPerRow;
     
     const x = col * (memoWidth + padding) + padding;
-    const y = row * (memoHeight + padding) + padding + 100; // +100 for header
+    const y = row * (memoHeight + padding) + padding + headerHeight;
     
     return { x, y };
-  }, []);
+  }, [responsiveConfig]);
 
   // 處理memo位置更新（禁用拖拽）
   const handleUpdateMemoPosition = useCallback((id: string, x: number, y: number) => {
@@ -202,6 +300,12 @@ const App: React.FC = () => {
     }
   }, [adminClearAllMemos, currentBoard]);
 
+  // Admin記事版切換（從控制台）
+  const handleAdminBoardSwitch = useCallback((board: Board) => {
+    setCurrentBoard(board);
+    switchBoard(board.id);
+  }, [switchBoard]);
+
   // 獲取當前記事版的背景主題
   const getBoardTheme = () => {
     if (!currentBoard) return 'from-purple-50 to-pink-50';
@@ -243,16 +347,16 @@ const App: React.FC = () => {
     <div 
       className={`relative w-full h-screen overflow-hidden bg-gradient-to-br ${getBoardTheme()}`}
     >
-      {/* 歡迎彈窗 */}
-      {showWelcome && (
+      {/* 歡迎彈窗 - 只對非Admin用戶顯示 */}
+      {showWelcome && !isAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4">
             <div className="text-center">
               <div className="text-6xl mb-4">🏫</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <h2 className={`font-bold text-gray-800 mb-2 ${responsiveConfig.titleSize}`}>
                 歡迎來到 LPMS LPedia
               </h2>
-              <h3 className="text-lg font-medium text-purple-600 mb-4">
+              <h3 className={`font-medium text-purple-600 mb-4 ${responsiveConfig.fontSize}`}>
                 貼文互動空間
               </h3>
               <p className="text-sm text-gray-600 mb-6">
@@ -278,10 +382,16 @@ const App: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="text-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className={`font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent ${responsiveConfig.titleSize}`}>
                 LPMS LPedia - 貼文互動空間
               </h1>
               <p className="text-xs text-gray-500">九龍婦女福利會李炳紀念學校 KWWCLPMS</p>
+            </div>
+            
+            {/* 設備類型顯示 */}
+            <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-lg">
+              <span className="text-sm">{responsiveConfig.showDeviceIcon}</span>
+              <span className="text-xs text-gray-600">{deviceType}</span>
             </div>
             
             {/* 記事版信息 */}
@@ -345,8 +455,8 @@ const App: React.FC = () => {
       </div>
 
       {/* 主要內容區域 */}
-      <div className="pt-32 w-full h-full relative overflow-auto">
-        {/* 渲染所有memo - 移除拖拽功能，使用固定排列 */}
+      <div className={`pt-32 w-full h-full relative overflow-auto`} style={{ paddingTop: responsiveConfig.headerHeight + 32 }}>
+        {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
         {memos
           .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
           .map((memo) => (
@@ -360,7 +470,8 @@ const App: React.FC = () => {
             isAdmin={isAdmin}
             onAdminDelete={handleAdminDeleteMemo}
             isDraggable={false}
-            isLargeSize={true}
+            isLargeSize={deviceType === 'Desktop'}
+            responsiveConfig={responsiveConfig}
           />
         ))}
 
@@ -369,7 +480,7 @@ const App: React.FC = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📝</div>
-              <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+              <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
                 歡迎來到 {currentBoard.name}！
               </h2>
               <p className="text-gray-500 mb-6">
@@ -391,7 +502,7 @@ const App: React.FC = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📋</div>
-              <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+              <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
                 請選擇一個記事版
               </h2>
               <p className="text-gray-500 mb-6">
@@ -414,6 +525,7 @@ const App: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateMemo}
+        responsiveConfig={responsiveConfig}
       />
 
       {/* 記事版選擇器 */}
@@ -425,6 +537,7 @@ const App: React.FC = () => {
         onSelectBoard={handleBoardSwitch}
         onCreateBoard={handleBoardCreate}
         canCreateBoard={isAdmin}
+        responsiveConfig={responsiveConfig}
       />
 
       {/* Admin 控制台 */}
@@ -439,13 +552,15 @@ const App: React.FC = () => {
           onDeleteBoard={handleBoardDelete}
           onDeleteMemo={handleAdminDeleteMemo}
           onClearAllMemos={handleAdminClearAll}
+          onSwitchBoard={handleAdminBoardSwitch}
           connectedUsers={connectedUsers}
+          responsiveConfig={responsiveConfig}
         />
       )}
 
       {/* 說明文字 */}
       <div className="absolute bottom-4 left-4 text-sm text-gray-500">
-        <p>📝 貼文會自動排列，每行5張</p>
+        <p>📝 貼文會自動排列，每行{responsiveConfig.memosPerRow}張</p>
         <p>✏️ 點擊編輯按鈕修改內容</p>
         <p>🌐 所有變更都會即時同步給其他用戶</p>
         {isAdmin && <p>👑 管理員模式：可以刪除任何貼文和管理記事版</p>}

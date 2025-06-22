@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { ChevronDown, Globe, Lock, Plus, X } from 'lucide-react';
 import { Board } from '../types';
 
+interface ResponsiveConfig {
+  memosPerRow: number;
+  memoWidth: number;
+  memoHeight: number;
+  padding: number;
+  headerHeight: number;
+  fontSize: string;
+  titleSize: string;
+  showDeviceIcon: string;
+}
+
 interface BoardSelectorProps {
   boards: Board[];
   currentBoard: Board | null;
@@ -10,6 +21,7 @@ interface BoardSelectorProps {
   onClose: () => void;
   onCreateBoard: (name: string, theme: string, description?: string) => void;
   canCreateBoard: boolean;
+  responsiveConfig?: ResponsiveConfig;
 }
 
 const BoardSelector: React.FC<BoardSelectorProps> = ({
@@ -20,6 +32,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
   onClose,
   onCreateBoard,
   canCreateBoard,
+  responsiveConfig,
 }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
@@ -60,12 +73,19 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
 
   if (!isOpen) return null;
 
+  // 響應式樣式
+  const fontSize = responsiveConfig?.fontSize || 'text-base';
+  const titleSize = responsiveConfig?.titleSize || 'text-lg';
+  const modalWidth = responsiveConfig?.memoWidth && responsiveConfig.memoWidth < 400 
+    ? 'w-11/12 max-w-sm' 
+    : 'w-96';
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-96 max-h-[80vh] overflow-hidden">
+      <div className={`bg-white rounded-xl shadow-xl max-h-[80vh] overflow-hidden ${modalWidth}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">選擇記事版</h3>
+          <h3 className={`font-semibold text-gray-800 ${titleSize}`}>選擇記事版</h3>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
@@ -78,24 +98,24 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
           {/* Create Board Form */}
           {showCreateForm && canCreateBoard && (
             <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <h4 className="font-medium text-gray-800 mb-3">創建新記事版</h4>
+              <h4 className={`font-medium text-gray-800 mb-3 ${fontSize}`}>創建新記事版</h4>
               <div className="space-y-3">
                 <input
                   type="text"
                   placeholder="記事版名稱"
                   value={newBoardName}
                   onChange={(e) => setNewBoardName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${fontSize}`}
                 />
                 <input
                   type="text"
                   placeholder="描述（可選）"
                   value={newBoardDescription}
                   onChange={(e) => setNewBoardDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${fontSize}`}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">主題色彩</label>
+                  <label className={`block font-medium text-gray-700 mb-2 ${fontSize}`}>主題色彩</label>
                   <div className="flex space-x-2">
                     {['purple', 'blue', 'green', 'orange', 'pink'].map((theme) => (
                       <button
@@ -111,13 +131,13 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
                 <div className="flex space-x-2">
                   <button
                     onClick={handleCreateBoard}
-                    className="flex-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                    className={`flex-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors ${fontSize}`}
                   >
                     創建
                   </button>
                   <button
                     onClick={() => setShowCreateForm(false)}
-                    className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    className={`flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors ${fontSize}`}
                   >
                     取消
                   </button>
@@ -132,7 +152,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
             {canCreateBoard && !showCreateForm && (
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors mb-4 flex items-center justify-center space-x-2"
+                className={`w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors mb-4 flex items-center justify-center space-x-2 ${fontSize}`}
               >
                 <Plus size={20} className="text-gray-500" />
                 <span className="text-gray-600">創建新記事版</span>
@@ -157,7 +177,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
                         <div
                           className={`w-3 h-3 rounded ${themeColors.bg}`}
                         />
-                        <span className="font-medium text-gray-800">{board.name}</span>
+                        <span className={`font-medium text-gray-800 ${fontSize}`}>{board.name}</span>
                         {board.isPublic ? (
                           <Globe size={14} className="text-gray-500" />
                         ) : (
@@ -171,9 +191,9 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
                       )}
                     </div>
                     {board.description && (
-                      <p className="text-sm text-gray-600 mb-2">{board.description}</p>
+                      <p className={`text-gray-600 mb-2 ${fontSize}`}>{board.description}</p>
                     )}
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className={`flex items-center justify-between text-xs text-gray-500`}>
                       <span>主題: {getThemeName(board.theme)}</span>
                       <span>{new Date(board.createdAt).toLocaleDateString('zh-TW')}</span>
                     </div>
@@ -185,7 +205,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
             {boards.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <Globe size={48} className="mx-auto mb-4 text-gray-300" />
-                <p>尚無可用的記事版</p>
+                <p className={fontSize}>尚無可用的記事版</p>
                 {canCreateBoard ? (
                   <p className="text-sm">點擊上方按鈕創建記事版</p>
                 ) : (

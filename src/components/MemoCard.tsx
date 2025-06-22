@@ -3,6 +3,17 @@ import Draggable from 'react-draggable';
 import { Trash2, Edit3, Image as ImageIcon, Shield } from 'lucide-react';
 import { Memo } from '../types';
 
+interface ResponsiveConfig {
+  memosPerRow: number;
+  memoWidth: number;
+  memoHeight: number;
+  padding: number;
+  headerHeight: number;
+  fontSize: string;
+  titleSize: string;
+  showDeviceIcon: string;
+}
+
 interface MemoCardProps {
   memo: Memo;
   onDelete: (id: string) => void;
@@ -13,6 +24,7 @@ interface MemoCardProps {
   onAdminDelete?: (id: string) => void;
   isDraggable?: boolean;
   isLargeSize?: boolean;
+  responsiveConfig?: ResponsiveConfig;
 }
 
 const MemoCard: React.FC<MemoCardProps> = ({
@@ -25,10 +37,19 @@ const MemoCard: React.FC<MemoCardProps> = ({
   onAdminDelete,
   isDraggable = true,
   isLargeSize = false,
+  responsiveConfig,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(memo.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 使用響應式配置或默認值
+  const config = responsiveConfig || {
+    memoWidth: 512,
+    memoHeight: 256,
+    fontSize: 'text-base',
+    titleSize: 'text-2xl'
+  };
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -68,13 +89,16 @@ const MemoCard: React.FC<MemoCardProps> = ({
     }
   };
 
-  const cardWidth = isLargeSize ? 'w-128' : 'w-64'; // 512px vs 256px
-  const cardHeight = isLargeSize ? 'min-h-64' : 'min-h-32'; // 256px vs 128px
+  // 響應式尺寸設置
+  const cardStyle = {
+    width: responsiveConfig ? `${responsiveConfig.memoWidth}px` : (isLargeSize ? '512px' : '256px'),
+    minHeight: responsiveConfig ? `${responsiveConfig.memoHeight}px` : (isLargeSize ? '256px' : '128px'),
+  };
 
   const MemoContent = () => (
     <div
-      className={`memo-card absolute ${cardWidth} ${cardHeight} p-4 rounded-lg shadow-lg border-2 border-gray-200`}
-      style={{ backgroundColor: memo.color }}
+      className={`memo-card absolute p-4 rounded-lg shadow-lg border-2 border-gray-200`}
+      style={{ backgroundColor: memo.color, ...cardStyle }}
     >
       {/* Drag Handle - 只在可拖拽時顯示 */}
       {isDraggable && (
@@ -127,7 +151,11 @@ const MemoCard: React.FC<MemoCardProps> = ({
           <img
             src={memo.image}
             alt="Memo attachment"
-            className={`w-full object-cover rounded-md ${isLargeSize ? 'h-48' : 'h-32'}`}
+            className={`w-full object-cover rounded-md ${
+              responsiveConfig 
+                ? `h-${Math.floor(responsiveConfig.memoHeight * 0.4)}` 
+                : (isLargeSize ? 'h-48' : 'h-32')
+            }`}
           />
         </div>
       )}
@@ -142,20 +170,24 @@ const MemoCard: React.FC<MemoCardProps> = ({
             onBlur={handleContentSubmit}
             onKeyDown={handleKeyPress}
             className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag ${
-              isLargeSize ? 'text-base' : 'text-sm'
+              responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
             }`}
             placeholder="輸入您的貼文內容..."
-            rows={isLargeSize ? 6 : 4}
+            rows={responsiveConfig ? Math.floor(responsiveConfig.memoHeight / 40) : (isLargeSize ? 6 : 4)}
           />
         ) : (
-          <p className={`text-gray-800 whitespace-pre-wrap ${isLargeSize ? 'text-base' : 'text-sm'}`}>
+          <p className={`text-gray-800 whitespace-pre-wrap ${
+            responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
+          }`}>
             {memo.content || '點擊編輯...'}
           </p>
         )}
       </div>
 
       {/* Timestamp */}
-      <div className={`mt-3 text-gray-500 ${isLargeSize ? 'text-sm' : 'text-xs'}`}>
+      <div className={`mt-3 text-gray-500 ${
+        responsiveConfig ? 'text-xs' : (isLargeSize ? 'text-sm' : 'text-xs')
+      }`}>
         {new Date(memo.createdAt).toLocaleString('zh-TW')}
       </div>
     </div>

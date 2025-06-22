@@ -1,10 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Palette, User } from 'lucide-react';
 
+interface ResponsiveConfig {
+  memosPerRow: number;
+  memoWidth: number;
+  memoHeight: number;
+  padding: number;
+  headerHeight: number;
+  fontSize: string;
+  titleSize: string;
+  showDeviceIcon: string;
+}
+
 interface AddMemoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (content: string, image?: string, color?: string, userName?: string) => void;
+  responsiveConfig?: ResponsiveConfig;
 }
 
 const COLORS = [
@@ -22,6 +34,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  responsiveConfig,
 }) => {
   const [content, setContent] = useState('');
   const [userName, setUserName] = useState('');
@@ -77,11 +90,16 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
 
   if (!isOpen) return null;
 
+  // 響應式樣式
+  const modalWidth = responsiveConfig?.memoWidth && responsiveConfig.memoWidth < 400 ? 'w-11/12 max-w-sm' : 'w-96 max-w-md';
+  const fontSize = responsiveConfig?.fontSize || 'text-base';
+  const titleSize = responsiveConfig?.titleSize || 'text-xl';
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+      <div className={`bg-white rounded-lg p-6 ${modalWidth} mx-4`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">新增貼文</h2>
+          <h2 className={`font-semibold text-gray-800 ${titleSize}`}>新增貼文</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700"
@@ -93,7 +111,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 用戶名稱輸入 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block font-medium text-gray-700 mb-2 ${fontSize}`}>
               <User size={16} className="inline mr-1" />
               您的名稱 (選填)
             </label>
@@ -102,7 +120,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder="輸入您的名稱..."
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className={`w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${fontSize}`}
             />
             <p className="text-xs text-gray-500 mt-1">
               如果不填寫，將顯示為匿名用戶
@@ -111,21 +129,21 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
 
           {/* 內容輸入 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block font-medium text-gray-700 mb-2 ${fontSize}`}>
               貼文內容
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="輸入您的貼文內容..."
-              className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              className={`w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${fontSize}`}
               required
             />
           </div>
 
           {/* 圖片上傳 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block font-medium text-gray-700 mb-2 ${fontSize}`}>
               圖片 (選填)
             </label>
             <div className="flex items-center space-x-2">
@@ -133,7 +151,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className={`flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 ${fontSize}`}
               >
                 <Upload size={16} />
                 <span>{isUploading ? '上傳中...' : '選擇圖片'}</span>
@@ -159,7 +177,7 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
 
           {/* 顏色選擇 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block font-medium text-gray-700 mb-2 ${fontSize}`}>
               <Palette size={16} className="inline mr-1" />
               背景顏色
             </label>
@@ -183,14 +201,14 @@ const AddMemoModal: React.FC<AddMemoModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              className={`px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 ${fontSize}`}
             >
               取消
             </button>
             <button
               type="submit"
               disabled={!content.trim() || isUploading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed ${fontSize}`}
             >
               發布貼文
             </button>
