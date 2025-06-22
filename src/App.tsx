@@ -254,7 +254,6 @@ const App: React.FC = () => {
 
   // 處理所有點讚數據
   const handleAllLikesReceived = useCallback((likes: Like[]) => {
-    console.log('處理所有點讚數據:', likes.length);
     const likesMap = new Map<string, Like[]>();
     likes.forEach(like => {
       const currentLikes = likesMap.get(like.memoId) || [];
@@ -265,7 +264,6 @@ const App: React.FC = () => {
 
   // 處理所有留言數據
   const handleAllCommentsReceived = useCallback((comments: Comment[]) => {
-    console.log('處理所有留言數據:', comments.length);
     const commentsMap = new Map<string, Comment[]>();
     comments.forEach(comment => {
       const currentComments = commentsMap.get(comment.memoId) || [];
@@ -447,13 +445,11 @@ const App: React.FC = () => {
 
   // 處理點讚
   const handleLike = useCallback((memoId: string) => {
-    console.log('App處理點讚，memo ID:', memoId);
     likeMemo(memoId);
   }, [likeMemo]);
 
   // 處理評論
   const handleComment = useCallback((memoId: string, content: string) => {
-    console.log('App處理評論，memo ID:', memoId, '內容:', content);
     commentMemo(memoId, content);
   }, [commentMemo]);
 

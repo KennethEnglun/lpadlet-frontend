@@ -45,7 +45,6 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
     if (isLiking) return; // 防止重複點擊
     
     setIsLiking(true);
-    console.log('點讚按鈕被點擊，memo ID:', memo.id);
     
     try {
       onLike(memo.id);
@@ -63,7 +62,6 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
     if (isCommenting || !commentText.trim()) return;
     
     setIsCommenting(true);
-    console.log('發送評論，memo ID:', memo.id, '內容:', commentText.trim());
     
     try {
       onComment(memo.id, commentText.trim());

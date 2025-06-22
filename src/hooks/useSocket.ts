@@ -77,20 +77,19 @@ export const useSocket = ({
 
       // 連接事件
       socket.on('connect', () => {
-        console.log('✅ Socket已連接，ID:', socket.id);
+        console.log('🔌 Socket已連接');
       });
 
-      socket.on('disconnect', (reason) => {
-        console.log('❌ Socket已斷開連接，原因:', reason);
+      socket.on('disconnect', () => {
+        console.log('🔌 Socket已斷開');
       });
 
       socket.on('connect_error', (error) => {
-        console.error('🔥 Socket連接錯誤:', error.message);
-        console.error('🔥 錯誤詳情:', error);
+        console.error('🔥 連接錯誤:', error.message);
       });
 
       socket.on('reconnect', (attemptNumber) => {
-        console.log('🔄 Socket重新連接成功，嘗試次數:', attemptNumber);
+        console.log('🔄 重連成功，嘗試次數:', attemptNumber);
       });
 
       socket.on('reconnect_attempt', (attemptNumber) => {
@@ -107,17 +106,14 @@ export const useSocket = ({
 
       // 設置事件監聽器
       socket.on('all-memos', (memos) => {
-        console.log('📝 收到所有memos:', memos.length);
         onMemosReceived(memos);
       });
       
       socket.on('new-memo', (memo) => {
-        console.log('🆕 收到新memo:', memo.id);
         onNewMemo(memo);
       });
       
       socket.on('memo-deleted', (memoId) => {
-        console.log('🗑️ memo已刪除:', memoId);
         onMemoDeleted(memoId);
       });
       
@@ -126,48 +122,41 @@ export const useSocket = ({
       socket.on('user-cursor', onUserCursor);
       socket.on('user-disconnected', onUserDisconnected);
       socket.on('user-count', (count) => {
-        console.log('👥 用戶數量:', count);
         onUserCountChanged(count);
       });
       
       // 新增：記事版相關事件
       socket.on('all-boards', (boards) => {
-        console.log('📋 收到所有記事版:', boards.length);
         onBoardsReceived(boards);
       });
       
       socket.on('board-created', onBoardCreated);
       socket.on('board-deleted', onBoardDeleted);
       socket.on('user-info', (info) => {
-        console.log('👤 用戶信息:', info);
         onUserInfo(info);
       });
       
       // 新增：點讚和評論事件
       if (onLikesReceived) {
         socket.on('memo-likes', (memoId, likes) => {
-          console.log(`❤️ 收到memo ${memoId} 的點讚:`, likes.length);
           onLikesReceived(memoId, likes);
         });
       }
       
       if (onCommentsReceived) {
         socket.on('memo-comments', (memoId, comments) => {
-          console.log(`💬 收到memo ${memoId} 的評論:`, comments.length);
           onCommentsReceived(memoId, comments);
         });
       }
       
       if (onNewLike) {
         socket.on('new-like', (like) => {
-          console.log('🆕❤️ 收到新點讚:', like);
           onNewLike(like);
         });
       }
       
       if (onNewComment) {
         socket.on('new-comment', (comment) => {
-          console.log('🆕💬 收到新評論:', comment);
           onNewComment(comment);
         });
       }
@@ -175,14 +164,12 @@ export const useSocket = ({
       // 新增：處理所有點讚和留言數據
       if (onAllLikesReceived) {
         socket.on('all-likes', (likes) => {
-          console.log('❤️ 收到所有點讚數據:', likes.length);
           onAllLikesReceived(likes);
         });
       }
       
       if (onAllCommentsReceived) {
         socket.on('all-comments', (comments) => {
-          console.log('💬 收到所有留言數據:', comments.length);
           onAllCommentsReceived(comments);
         });
       }
@@ -274,12 +261,10 @@ export const useSocket = ({
 
   // 新增：點讚和評論方法
   const likeMemo = useCallback((memoId: string) => {
-    console.log('Socket發送like-memo事件，memo ID:', memoId);
     socketRef.current?.emit('like-memo', memoId);
   }, []);
 
   const commentMemo = useCallback((memoId: string, content: string) => {
-    console.log('Socket發送comment-memo事件，memo ID:', memoId, '內容:', content);
     socketRef.current?.emit('comment-memo', { memoId, content });
   }, []);
 
