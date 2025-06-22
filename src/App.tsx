@@ -522,8 +522,8 @@ const App: React.FC = () => {
     <div 
       className={`relative w-full h-screen overflow-hidden bg-gradient-to-br ${getBoardTheme()}`}
     >
-      {/* 歡迎彈窗 - 只對非Admin用戶顯示 */}
-      {showWelcome && !isAdmin && (
+      {/* 歡迎彈窗 */}
+      {showWelcome && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4">
             <div className="text-center">
@@ -538,15 +538,14 @@ const App: React.FC = () => {
                 九龍婦女福利會李炳紀念學校 KWWCLPMS
               </p>
               <p className="text-gray-600 mb-6">
-                請選擇一個記事版開始您的互動之旅！
+                系統正在載入科目資料，請稍候...
               </p>
-              <button
-                onClick={() => setIsBoardSelectorOpen(true)}
-                className="w-full bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center space-x-2"
-              >
-                <Layout size={20} />
-                <span>選擇記事版</span>
-              </button>
+              {isAdmin && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 font-medium">👑 管理員模式</p>
+                  <p className="text-xs text-red-500 mt-1">您可以創建和管理記事版</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
