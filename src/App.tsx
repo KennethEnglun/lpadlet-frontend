@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Users, Settings, Layout, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Plus, Users, Settings, Layout, Monitor, Smartphone, Tablet, ChevronUp, ChevronDown } from 'lucide-react';
 import MemoCard from './components/MemoCard';
 import AddMemoModal from './components/AddMemoModal';
 import AdminPanel from './components/AdminPanel';
@@ -108,6 +108,8 @@ const App: React.FC = () => {
   const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Header 折疊狀態（行動裝置可收合）
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   // 檢查Admin權限和設置歡迎彈窗顯示
   useEffect(() => {
@@ -344,6 +346,8 @@ const App: React.FC = () => {
     }
   }, [memos.length, currentBoard, calculateMemoPosition]);
 
+  const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
+
   return (
     <div 
       className={`relative w-full h-screen overflow-hidden bg-gradient-to-br ${getBoardTheme()}`}
@@ -379,8 +383,21 @@ const App: React.FC = () => {
       )}
 
       {/* 頂部工具欄 */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-sm border-b border-purple-200 p-4">
-        <div className="flex items-center justify-between">
+      <div
+        className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-sm border-b border-purple-200 transition-all duration-300"
+        style={{ height: effectiveHeaderHeight }}
+      >
+        <div className="flex items-center justify-between h-full">
+          {/* 折疊控制（僅行動裝置顯示） */}
+          {deviceType !== 'Desktop' && (
+            <button
+              onClick={() => setHeaderCollapsed(!headerCollapsed)}
+              className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border rounded-full w-8 h-8 flex items-center justify-center shadow"
+            >
+              {headerCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
+          )}
+
           <div className="flex items-center space-x-4">
             <div className="text-center">
               <h1 className={`font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent ${responsiveConfig.titleSize}`}>
@@ -456,6 +473,7 @@ const App: React.FC = () => {
       </div>
 
       {/* 主要內容區域，加上縮放及拖移功能 */}
+      <div className="w-full h-full overflow-auto">
       <TransformWrapper
         minScale={0.5}
         maxScale={2}
@@ -471,7 +489,7 @@ const App: React.FC = () => {
               <button onClick={resetTransform} className="bg-white/80 backdrop-blur-sm border rounded-full w-10 h-10 flex items-center justify-center text-xs shadow">重置</button>
             </div>
             <TransformComponent>
-              <div className={`pt-32 w-full h-full relative`} style={{ paddingTop: responsiveConfig.headerHeight + 32 }}>
+              <div className={`pt-32 w-full relative`} style={{ paddingTop: effectiveHeaderHeight + 32 }}>
                 {/* 渲染所有memo - 移除拖拽功能，使用響應式固定排列 */}
                 {memos
                   .filter(memo => !currentBoard || memo.boardId === currentBoard.id)
@@ -539,6 +557,7 @@ const App: React.FC = () => {
           </>
         )}
       </TransformWrapper>
+      </div>
 
       {/* 新增貼文模態框 */}
       <AddMemoModal
@@ -579,7 +598,7 @@ const App: React.FC = () => {
       )}
 
       {/* 說明文字 */}
-      <div className="absolute bottom-4 left-4 text-sm text-gray-500">
+      <div className="absolute bottom-4 left-4 text-sm text-gray-500 pointer-events-none">
         <p>📝 貼文會自動排列，每行{responsiveConfig.memosPerRow}張</p>
         <p>✏️ 點擊編輯按鈕修改內容</p>
         <p>🌐 所有變更都會即時同步給其他用戶</p>
