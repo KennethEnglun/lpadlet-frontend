@@ -385,13 +385,22 @@ const App: React.FC = () => {
     return themes[currentBoard.theme as keyof typeof themes] || themes.purple;
   };
 
-  // 只在記事版切換時自動重置一次
+  // 記事版切換時自動重置一次
   useEffect(() => {
-    if (currentBoard && memos.length > 0) {
-      console.log('Board switched, repositioning memos once');
-      handleResetPositions();
+    if (currentBoard) {
+      console.log('Board switched, will reposition memos');
+      // 延遲一點時間確保memo已經載入
+      const timer = setTimeout(() => {
+        const currentBoardMemos = memos.filter(m => m.boardId === currentBoard.id);
+        if (currentBoardMemos.length > 0) {
+          console.log('Auto-repositioning memos for board:', currentBoard.name);
+          handleResetPositions();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [currentBoard]); // 只依賴 currentBoard，移除其他依賴避免重複觸發
+  }, [currentBoard, memos.length]); // 依賴記事版和memo數量變化
 
   const effectiveHeaderHeight = headerCollapsed ? 48 : responsiveConfig.headerHeight;
 

@@ -108,10 +108,10 @@ const MemoCard: React.FC<MemoCardProps> = ({
     setImageError(true);
   };
 
-  // 響應式尺寸設置
+  // 響應式尺寸設置 - 固定高度防止圖片載入時閃動
   const cardStyle = {
     width: responsiveConfig ? `${responsiveConfig.memoWidth}px` : (isLargeSize ? '512px' : '256px'),
-    minHeight: responsiveConfig ? `${responsiveConfig.memoHeight}px` : (isLargeSize ? '256px' : '128px'),
+    height: responsiveConfig ? `${responsiveConfig.memoHeight}px` : (isLargeSize ? '256px' : '128px'), // 改為固定高度
   };
 
   const MemoContent = () => (
@@ -164,55 +164,35 @@ const MemoCard: React.FC<MemoCardProps> = ({
         )}
       </div>
 
-      {/* Image */}
+      {/* Image - 固定容器高度防止閃動 */}
       {memo.image && (
-        <div className={`mb-3 ${isLargeSize ? 'mt-12' : 'mt-8'}`}>
+        <div 
+          className={`mb-3 ${isLargeSize ? 'mt-12' : 'mt-8'} relative overflow-hidden rounded-md`}
+          style={{
+            height: responsiveConfig
+              ? `${responsiveConfig.memoHeight * 0.45}px`
+              : isLargeSize
+                ? '110px'
+                : '60px',
+            backgroundColor: '#f3f4f6'
+          }}
+        >
           {!imageLoaded && !imageError && (
-            <div 
-              className="w-full bg-gray-200 rounded-md flex items-center justify-center"
-              style={{
-                maxHeight: responsiveConfig
-                  ? `${responsiveConfig.memoHeight * 0.5}px`
-                  : isLargeSize
-                    ? '200px'
-                    : '120px',
-                minHeight: '80px'
-              }}
-            >
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
               <div className="text-gray-400 text-sm">載入中...</div>
             </div>
           )}
           {imageError && (
-            <div 
-              className="w-full bg-gray-100 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300"
-              style={{
-                maxHeight: responsiveConfig
-                  ? `${responsiveConfig.memoHeight * 0.5}px`
-                  : isLargeSize
-                    ? '200px'
-                    : '120px',
-                minHeight: '80px'
-              }}
-            >
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
               <div className="text-gray-400 text-sm">圖片載入失敗</div>
             </div>
           )}
           <img
             src={memo.image}
             alt="Memo attachment"
-            className={`w-full object-cover rounded-md transition-opacity duration-200 ${
+            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
-            style={{
-              maxHeight: responsiveConfig
-                ? `${responsiveConfig.memoHeight * 0.5}px`
-                : isLargeSize
-                  ? '200px'
-                  : '120px',
-              objectFit: 'contain',
-              width: '100%',
-              height: 'auto'
-            }}
             onLoad={handleImageLoad}
             onError={handleImageError}
             loading="lazy"
@@ -220,8 +200,8 @@ const MemoCard: React.FC<MemoCardProps> = ({
         </div>
       )}
 
-      {/* Content */}
-      <div className={`${isLargeSize ? 'mt-12' : 'mt-8'} ${memo.image ? '' : ''} flex-1 overflow-hidden`}>
+      {/* Content - 調整空間分配 */}
+      <div className={`${isLargeSize ? 'mt-12' : 'mt-8'} ${memo.image ? '' : ''} flex-1 flex flex-col overflow-hidden`}>
         {isEditing ? (
           <textarea
             ref={textareaRef}
@@ -229,25 +209,28 @@ const MemoCard: React.FC<MemoCardProps> = ({
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleContentSubmit}
             onKeyDown={handleKeyPress}
-            className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag break-words ${
+            className={`w-full bg-transparent border-none resize-none outline-none text-gray-800 no-drag break-words flex-1 ${
               responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
             }`}
             placeholder="輸入您的貼文內容..."
-            rows={responsiveConfig ? Math.floor(responsiveConfig.memoHeight / 40) : (isLargeSize ? 6 : 4)}
             style={{ 
               wordWrap: 'break-word', 
               overflowWrap: 'break-word',
-              maxHeight: responsiveConfig ? `${responsiveConfig.memoHeight * 0.4}px` : '120px'
+              maxHeight: memo.image 
+                ? (responsiveConfig ? `${responsiveConfig.memoHeight * 0.35}px` : '80px')
+                : (responsiveConfig ? `${responsiveConfig.memoHeight * 0.7}px` : '160px')
             }}
           />
         ) : (
-          <p className={`text-gray-800 whitespace-pre-wrap break-words overflow-hidden ${
+          <p className={`text-gray-800 whitespace-pre-wrap break-words overflow-hidden flex-1 ${
             responsiveConfig ? responsiveConfig.fontSize : (isLargeSize ? 'text-base' : 'text-sm')
           }`} style={{ 
             wordWrap: 'break-word', 
             overflowWrap: 'break-word', 
             hyphens: 'auto',
-            maxHeight: responsiveConfig ? `${responsiveConfig.memoHeight * 0.4}px` : '120px',
+            maxHeight: memo.image 
+              ? (responsiveConfig ? `${responsiveConfig.memoHeight * 0.35}px` : '80px')
+              : (responsiveConfig ? `${responsiveConfig.memoHeight * 0.7}px` : '160px'),
             overflowY: 'auto'
           }}>
             {memo.content || '點擊編輯...'}
