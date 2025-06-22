@@ -5,9 +5,9 @@ export interface Memo {
   x: number;
   y: number;
   color: string;
-  createdAt: Date;
-  createdBy: string;
   boardId: string;
+  createdAt: string;
+  createdBy: string;
   userName?: string;
 }
 
@@ -43,7 +43,8 @@ export interface Board {
   name: string;
   theme: string;
   description?: string;
-  createdAt: Date;
+  subjectId: string;
+  createdAt: string;
   createdBy: string;
   isPublic: boolean;
 }
@@ -76,4 +77,10 @@ export interface Like {
   userId: string;
   createdAt: string;
   memoId: string;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+  icon: string;
 } 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Memo, UserCursor, CreateMemoData, UpdateMemoPositionData, UpdateMemoContentData, Board, User, Comment, Like } from '../types';
+import { Memo, UserCursor, CreateMemoData, UpdateMemoPositionData, UpdateMemoContentData, Board, User, Comment, Like, Subject } from '../types';
+import SERVER_URL from '../config';
 
 interface UseSocketProps {
   onMemosReceived: (memos: Memo[]) => void;
@@ -12,6 +13,7 @@ interface UseSocketProps {
   onUserDisconnected: (userId: string) => void;
   onUserCountChanged: (count: number) => void;
   onBoardsReceived: (boards: Board[]) => void;
+  onSubjectsReceived: (subjects: Subject[]) => void;
   onBoardCreated: (board: Board) => void;
   onBoardDeleted: (boardId: string) => void;
   onUserInfo: (user: User) => void;
@@ -27,6 +29,7 @@ interface CreateBoardData {
   name: string;
   theme: string;
   description?: string;
+  subjectId: string;
 }
 
 export const useSocket = ({
@@ -39,6 +42,7 @@ export const useSocket = ({
   onUserDisconnected,
   onUserCountChanged,
   onBoardsReceived,
+  onSubjectsReceived,
   onBoardCreated,
   onBoardDeleted,
   onUserInfo,
@@ -130,6 +134,11 @@ export const useSocket = ({
         onBoardsReceived(boards);
       });
       
+      // 新增：科目相關事件
+      socket.on('all-subjects', (subjects) => {
+        onSubjectsReceived(subjects);
+      });
+      
       socket.on('board-created', onBoardCreated);
       socket.on('board-deleted', onBoardDeleted);
       socket.on('user-info', (info) => {
@@ -205,6 +214,7 @@ export const useSocket = ({
     onUserDisconnected,
     onUserCountChanged,
     onBoardsReceived,
+    onSubjectsReceived,
     onBoardCreated,
     onBoardDeleted,
     onUserInfo,

@@ -6,7 +6,8 @@ import AdminPanel from './components/AdminPanel';
 import BoardSelector from './components/BoardSelector';
 import MemoDetailModal from './components/MemoDetailModal';
 import { useSocket } from './hooks/useSocket';
-import { Memo, UserCursor, Board, User, Comment, Like } from './types';
+import { Memo, UserCursor, Board, User, Comment, Like, Subject } from './types';
+import SubjectSelector from './components/SubjectSelector';
 
 // 設備檢測函數
 const getDeviceType = () => {
@@ -112,6 +113,7 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isBoardSelectorOpen, setIsBoardSelectorOpen] = useState(false);
+  const [isSubjectSelectorOpen, setIsSubjectSelectorOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [selectedMemo, setSelectedMemo] = useState<Memo | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -129,6 +131,10 @@ const App: React.FC = () => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   // 重置狀態
   const [isResetting, setIsResetting] = useState(false);
+
+  // 科目狀態
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [currentSubject, setCurrentSubject] = useState<Subject | null>(null);
 
   // 檢查Admin權限和設置歡迎彈窗顯示
   useEffect(() => {
@@ -272,6 +278,11 @@ const App: React.FC = () => {
     setMemoComments(commentsMap);
   }, []);
 
+  // 處理科目接收
+  const handleSubjectsReceived = useCallback((subjects: Subject[]) => {
+    setSubjects(subjects);
+  }, []);
+
   // 使用Socket Hook
   const { 
     createMemo, 
@@ -308,6 +319,7 @@ const App: React.FC = () => {
     onNewComment: handleNewComment,
     onAllLikesReceived: handleAllLikesReceived,
     onAllCommentsReceived: handleAllCommentsReceived,
+    onSubjectsReceived: handleSubjectsReceived,
   });
 
   // 獲取當前socket ID
@@ -408,8 +420,10 @@ const App: React.FC = () => {
 
   // 處理記事版創建
   const handleBoardCreate = useCallback((name: string, theme: string, description?: string) => {
-    createBoard({ name, theme, description });
-  }, [createBoard]);
+    if (currentSubject) {
+      createBoard({ name, theme, description, subjectId: currentSubject.id });
+    }
+  }, [createBoard, currentSubject]);
 
   // 處理記事版刪除
   const handleBoardDelete = useCallback((boardId: string) => {
@@ -457,6 +471,21 @@ const App: React.FC = () => {
   const handleCloseDetailModal = useCallback(() => {
     setIsDetailModalOpen(false);
     setSelectedMemo(null);
+  }, []);
+
+  // 處理科目選擇
+  const handleSubjectSelect = useCallback((subject: Subject) => {
+    setCurrentSubject(subject);
+    setIsSubjectSelectorOpen(false);
+    setIsBoardSelectorOpen(true);
+  }, []);
+
+  // 返回科目選擇
+  const handleBackToSubjects = useCallback(() => {
+    setIsBoardSelectorOpen(false);
+    setIsSubjectSelectorOpen(true);
+    setCurrentSubject(null);
+    setCurrentBoard(null);
   }, []);
 
   // 獲取當前記事版的背景主題
@@ -548,15 +577,16 @@ const App: React.FC = () => {
               <span className="text-xs text-gray-600">{deviceType}</span>
             </div>
             
-            {/* 記事版信息 */}
-            {currentBoard && (
+            {/* 科目和記事版信息 */}
+            {currentSubject && currentBoard && (
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setIsBoardSelectorOpen(true)}
                   className="flex items-center space-x-2 px-3 py-1 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
                 >
+                  <span className="text-lg">{currentSubject.icon}</span>
                   <Layout size={16} />
-                  <span className="text-sm font-medium">{currentBoard.name}</span>
+                  <span className="text-sm font-medium">{currentSubject.name} - {currentBoard.name}</span>
                 </button>
               </div>
             )}
@@ -586,13 +616,13 @@ const App: React.FC = () => {
               </button>
             )}
             
-            {/* 記事版選擇按鈕 */}
+            {/* 科目選擇按鈕 */}
             <button
-              onClick={() => setIsBoardSelectorOpen(true)}
+              onClick={() => setIsSubjectSelectorOpen(true)}
               className="flex items-center space-x-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
             >
               <Layout size={16} />
-              <span>記事版</span>
+              <span>選擇科目</span>
             </button>
             
             {/* 新增貼文按鈕 */}
@@ -668,23 +698,23 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {/* 無記事版狀態 */}
-                {!currentBoard && !showWelcome && (
+                {/* 無科目或記事版狀態 */}
+                {(!currentSubject || !currentBoard) && !showWelcome && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-6xl mb-4">📋</div>
+                      <div className="text-6xl mb-4">📚</div>
                       <h2 className={`font-semibold text-gray-700 mb-2 ${responsiveConfig.titleSize}`}>
-                        請選擇一個記事版
+                        {!currentSubject ? '請選擇科目' : '請選擇記事版'}
                       </h2>
                       <p className="text-gray-500 mb-6">
-                        點擊上方記事版按鈕來選擇或創建記事版
+                        {!currentSubject ? '點擊上方科目按鈕來選擇科目' : '點擊上方按鈕來選擇記事版'}
                       </p>
                       <button
-                        onClick={() => setIsBoardSelectorOpen(true)}
+                        onClick={() => !currentSubject ? setIsSubjectSelectorOpen(true) : setIsBoardSelectorOpen(true)}
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                       >
                         <Layout size={20} />
-                        <span>選擇記事版</span>
+                        <span>{!currentSubject ? '選擇科目' : '選擇記事版'}</span>
                       </button>
                     </div>
                   </div>
@@ -700,14 +730,25 @@ const App: React.FC = () => {
         responsiveConfig={responsiveConfig}
       />
 
+      {/* 科目選擇器 */}
+      <SubjectSelector
+        isOpen={isSubjectSelectorOpen}
+        onClose={() => setIsSubjectSelectorOpen(false)}
+        subjects={subjects}
+        onSelectSubject={handleSubjectSelect}
+        responsiveConfig={responsiveConfig}
+      />
+
       {/* 記事版選擇器 */}
       <BoardSelector
         isOpen={isBoardSelectorOpen}
         onClose={() => setIsBoardSelectorOpen(false)}
         boards={boards}
         currentBoard={currentBoard}
+        currentSubject={currentSubject}
         onSelectBoard={handleBoardSwitch}
         onCreateBoard={handleBoardCreate}
+        onBackToSubjects={handleBackToSubjects}
         canCreateBoard={isAdmin}
         responsiveConfig={responsiveConfig}
       />

@@ -126,8 +126,8 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
         <div className="flex flex-col lg:flex-row max-h-[calc(90vh-140px)]">
           {/* Left side - Image */}
           {memo.image && (
-            <div className="lg:w-1/2 bg-gray-50 flex items-center justify-center p-4">
-              <div className="relative w-full h-full max-h-96 lg:max-h-full">
+            <div className="lg:w-1/2 bg-gray-50 flex items-center justify-center p-4 max-h-64 lg:max-h-full">
+              <div className="relative w-full h-full max-h-60 lg:max-h-full">
                 {!imageLoaded && !imageError && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-md">
                     <div className="text-gray-400">載入中...</div>
@@ -152,20 +152,20 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
           )}
 
           {/* Right side - Content and interactions */}
-          <div className={`${memo.image ? 'lg:w-1/2' : 'w-full'} flex flex-col`}>
-            {/* Text content */}
-            <div className="p-6 flex-1 overflow-y-auto">
+          <div className={`${memo.image ? 'lg:w-1/2' : 'w-full'} flex flex-col min-h-0`}>
+            {/* Text content - 確保在移動設備上可見 */}
+            <div className="p-4 lg:p-6 flex-shrink-0">
               <div 
                 className="w-6 h-6 rounded-full mb-4"
                 style={{ backgroundColor: memo.color }}
               ></div>
-              <p className="text-gray-800 whitespace-pre-wrap break-words text-lg leading-relaxed">
+              <p className="text-gray-800 whitespace-pre-wrap break-words text-base lg:text-lg leading-relaxed">
                 {memo.content || '無內容'}
               </p>
             </div>
 
             {/* Likes and Comments section */}
-            <div className="border-t border-gray-200">
+            <div className="border-t border-gray-200 flex-1 flex flex-col min-h-0">
               {/* Like and Comment buttons */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center space-x-4">
@@ -197,7 +197,7 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
               </div>
 
               {/* Comments list */}
-              <div className="max-h-48 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {comments.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">還沒有評論，成為第一個留言的人吧！</p>
                 ) : (
@@ -227,7 +227,7 @@ const MemoDetailModal: React.FC<MemoDetailModalProps> = ({
               </div>
 
               {/* Comment input */}
-              <div className="p-4 border-t border-gray-100">
+              <div className="p-4 border-t border-gray-100 flex-shrink-0">
                 <div className="flex space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
                     <User size={14} className="text-white" />
