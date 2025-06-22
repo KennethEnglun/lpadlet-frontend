@@ -143,10 +143,10 @@ const App: React.FC = () => {
     const isAdminUser = adminParam === 'admin123';
     setIsAdmin(isAdminUser);
     
-    // Admin用戶不顯示歡迎彈窗
-    if (isAdminUser) {
-      setShowWelcome(false);
-    }
+    // 所有用戶都需要先選擇科目，不自動關閉歡迎彈窗
+    // if (isAdminUser) {
+    //   setShowWelcome(false);
+    // }
   }, []);
 
   // 設備變化檢測
@@ -281,7 +281,12 @@ const App: React.FC = () => {
   // 處理科目接收
   const handleSubjectsReceived = useCallback((subjects: Subject[]) => {
     setSubjects(subjects);
-  }, []);
+    // 當科目數據到達且用戶還未選擇科目時，自動打開科目選擇器
+    if (subjects.length > 0 && !currentSubject) {
+      setShowWelcome(false);
+      setIsSubjectSelectorOpen(true);
+    }
+  }, [currentSubject]);
 
   // 使用Socket Hook
   const { 
