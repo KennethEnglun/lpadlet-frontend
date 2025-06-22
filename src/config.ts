@@ -5,9 +5,9 @@ const config = {
     SOCKET_URL: 'http://localhost:5000'
   },
   production: {
-    // 部署後請修改為您的實際後端URL
-    API_URL: import.meta.env.VITE_API_URL || 'https://your-backend-app.railway.app',
-    SOCKET_URL: import.meta.env.VITE_API_URL || 'https://your-backend-app.railway.app'
+    // Railway後端URL
+    API_URL: import.meta.env.VITE_API_URL || 'https://lpadlet.up.railway.app',
+    SOCKET_URL: import.meta.env.VITE_API_URL || 'https://lpadlet.up.railway.app'
   }
 };
 

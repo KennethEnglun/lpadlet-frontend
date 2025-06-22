@@ -29,23 +29,25 @@ export const useSocket = ({
     // 連接到服務器
     import('../config').then(({ default: config }) => {
       socketRef.current = io(config.SOCKET_URL);
+      
+      const socket = socketRef.current;
+
+      // 設置事件監聽器
+      socket.on('all-memos', onMemosReceived);
+      socket.on('new-memo', onNewMemo);
+      socket.on('memo-deleted', onMemoDeleted);
+      socket.on('memo-position-updated', onMemoPositionUpdated);
+      socket.on('memo-content-updated', onMemoContentUpdated);
+      socket.on('user-cursor', onUserCursor);
+      socket.on('user-disconnected', onUserDisconnected);
+      socket.on('user-count', onUserCountChanged);
     });
-
-    const socket = socketRef.current;
-
-    // 設置事件監聽器
-    socket.on('all-memos', onMemosReceived);
-    socket.on('new-memo', onNewMemo);
-    socket.on('memo-deleted', onMemoDeleted);
-    socket.on('memo-position-updated', onMemoPositionUpdated);
-    socket.on('memo-content-updated', onMemoContentUpdated);
-    socket.on('user-cursor', onUserCursor);
-    socket.on('user-disconnected', onUserDisconnected);
-    socket.on('user-count', onUserCountChanged);
 
     // 清理函數
     return () => {
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, [
     onMemosReceived,
